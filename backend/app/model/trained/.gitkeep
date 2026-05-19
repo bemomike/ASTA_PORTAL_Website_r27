@@ -1,0 +1,6 @@
+Folder ini sengaja dikosongkan di GitHub.
+Upload file berikut ke folder ini setelah git clone/pull di PythonAnywhere:
+  - rf_model.pkl    (dari Export-4 notebook Colab)
+  - le_tanah.pkl    (dari Export-4 notebook Colab)
+  - le_veg.pkl      (dari Export-4 notebook Colab)
+Cara upload: PythonAnywhere → tab Files → navigasi ke folder ini → Upload a file

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTA PORTAL — Beranda</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-kiri">
+    <ul class="nav-links">
+      <li><a href="index.html"    class="aktif">Beranda</a></li>
+      <li><a href="panduan.html"             >Panduan</a></li>
+      <li><a href="simulasi.html"            >Simulasi</a></li>
+      <li><a href="hasil1.html"              >Hasil I</a></li>
+      <li><a href="hasil2.html"              >Hasil II</a></li>
+    </ul>
+  </div>
+  <div class="nav-logo-grup">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo"
+         onerror="this.style.display='none'">
+    <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo"
+         onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<main>
+  <!-- Slideshow 6 foto latar -->
+  <div id="slideshow" class="slideshow"></div>
+
+  <div class="kartu" style="max-width:800px;margin:0 auto">
+    <h1 style="color:var(--hijau-tua);font-size:1.6rem;margin-bottom:0.4rem">ASTA PORTAL</h1>
+    <p style="font-size:1rem;color:var(--teks-redup);margin-bottom:1rem">
+      Simulasi Tanah dan Pohon untuk Prediksi Potensi Tanah Longsor
+    </p>
+    <p style="line-height:1.75;color:var(--teks-utama);margin-bottom:1rem">
+      Simulasi Tanah dan Pohon untuk Prediksi Potensi Tanah Longsor di Kabupaten Semarang
+      merupakan sistem informasi yang melayani pemaparan dan simulasi kecocokan variasi antara
+      jenis pohon dan kondisi jenis tanah di tiap kecamatan dalam Kabupaten Semarang berbasis
+      kecerdasan buatan. Website dilengkapi panduan penggunaan sehingga dapat digunakan secara
+      luas oleh publik.
+    </p>
+
+    <h3 style="color:var(--hijau-tua);margin-bottom:0.6rem">Layanan yang Tersedia</h3>
+    <ul style="line-height:2.1;padding-left:1.2rem">
+      <li>Panduan penggunaan website simulasi untuk publik</li>
+      <li>Informasi lengkap mengenai jenis pohon, jenis tanah, dan informasi topografi di tiap kecamatan</li>
+      <li>Simulasi kecocokan antara jenis pohon dan kondisi jenis tanah untuk memprediksi potensi longsor</li>
+      <li>Hasil simulasi yang dapat diunduh secara lengkap dan gratis untuk publik</li>
+      <li>Tertera ragam sumber data yang digunakan untuk website ini dan dapat diakses</li>
+      <li>Website dapat digunakan di komputer pribadi (laptop) dan ponsel</li>
+    </ul>
+
+    <div style="margin-top:1.4rem">
+      <a href="panduan.html" class="tombol">Ke Panduan</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  ASTA PORTAL 2026 | Tugas Akhir Mahasiswa Program Studi Matematika
+  Fakultas Sains dan Matematika Universitas Kristen Satya Wacana
+</footer>
+
+<script src="js/ui.js"></script>
+<script>
+  uiInitSlideshow("slideshow", [
+    "longsor_kab_smg.jpeg",
+    "longsor_kab_smg2.jpeg",
+    "longsor_kab_smg3.jpeg",
+    "longsor_kab_smg4.jpeg",
+    "longsor_kab_smg5.jpeg",
+    "longsor_kab_smg6.jpeg",
+  ]);
+</script>
+</body>
+</html>

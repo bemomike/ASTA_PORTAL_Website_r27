@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTA PORTAL — Simulasi</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    .sim-layout { display: flex; gap: 1rem; align-items: flex-start; }
+    .sim-kiri   { flex: 0 0 58%; min-width: 0; }
+    .sim-kanan  { flex: 1; }
+    .mm-label { font-size: 0.78rem; color: var(--teks-redup); margin-top: 0.15rem; }
+    .mm-label span { color: var(--hijau-tua); font-weight: 600; }
+    .mm-ref { font-size: 0.72rem; color: #999; margin-top: 0.1rem; }
+    #banner-backend {
+      display: none;
+      background: #fff3cd; border: 1px solid #ffc107;
+      border-radius: 6px; padding: 0.6rem 1rem;
+      font-size: 0.83rem; color: #856404; margin-bottom: 0.75rem;
+    }
+    /* Kondisi identik notice */
+    #notice-identik {
+      display: none;
+      background: #fff8f0; border: 1px solid #f0a500;
+      border-radius: 6px; padding: 0.5rem 0.85rem;
+      font-size: 0.80rem; color: #7a4a00; margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-kiri">
+    <ul class="nav-links">
+      <li><a href="index.html"              >Beranda</a></li>
+      <li><a href="panduan.html"            >Panduan</a></li>
+      <li><a href="simulasi.html" class="aktif">Simulasi</a></li>
+      <li><a href="hasil1.html"             >Hasil I</a></li>
+      <li><a href="hasil2.html"             >Hasil II</a></li>
+    </ul>
+  </div>
+  <div class="nav-logo-grup">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
+    <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<main>
+  <div id="banner-backend">
+    ⚠️ Informasi kecamatan tidak dapat dimuat (server backend tidak merespons).
+    Pilih kecamatan dan slider tetap dapat digunakan, tetapi tombol
+    <strong>Mulai Simulasi</strong> baru aktif setelah server pulih.
+    Refresh halaman atau hubungi pengelola jika masalah berlanjut.
+  </div>
+
+  <div style="margin-bottom:0.9rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+    <label for="kec-select" style="font-weight:600;color:var(--hijau-tua)">Pilih Kecamatan</label>
+    <select id="kec-select" style="padding:0.42rem 0.75rem;border:1px solid var(--border);
+      border-radius:5px;font-size:0.9rem;min-width:210px">
+      <option value="">Memuat daftar…</option>
+    </select>
+  </div>
+
+  <div class="sim-layout">
+    <div class="sim-kiri">
+      <div id="peta"></div>
+      <div id="legenda-overlay" style="display:none;padding:0.4rem 0.5rem;background:#f9f9f9;
+        border:1px solid #ddd;border-radius:5px;margin-top:0.4rem;font-size:0.76rem"></div>
+
+      <div style="margin-top:0.5rem;display:flex;gap:0.45rem;flex-wrap:wrap">
+        <button id="btn-pohon" class="tombol tombol-outline"
+          style="font-size:0.82rem;padding:0.38rem 0.85rem" disabled>
+          Informasi Sebaran Jenis Pohon
+        </button>
+        <button id="btn-tanah-btn" class="tombol tombol-outline"
+          style="font-size:0.82rem;padding:0.38rem 0.85rem" disabled>
+          Informasi Sebaran Jenis Tanah
+        </button>
+      </div>
+
+      <!-- Slider Curah Hujan -->
+      <div class="slider-wrap" style="margin-top:1rem">
+        <label>
+          <span>Intensitas Curah Hujan</span>
+          <strong id="ch-val">100%</strong>
+        </label>
+        <input type="range" id="slider-ch" min="0" max="100" value="100" step="0.5">
+        <div class="mm-label">
+          Nilai ekuivalen: <span id="ch-mm">(pilih kecamatan dulu)</span>
+          &nbsp;dari rerata tahunan kecamatan terpilih
+        </div>
+        <div class="mm-ref">
+          Referensi maksimum Kabupaten Semarang: 2057.668421 mm/tahun
+        </div>
+        <p class="slider-hint" style="margin-top:0.2rem">
+          0% = kering total &nbsp;|&nbsp; 100% = kondisi aktual historis kecamatan terpilih
+        </p>
+      </div>
+
+      <!-- Slider Populasi Pohon -->
+      <div class="slider-wrap">
+        <label>
+          <span>Densitas Populasi Pohon</span>
+          <strong id="tcc-val">100%</strong>
+        </label>
+        <input type="range" id="slider-tcc" min="0" max="100" value="100" step="0.5">
+        <p class="slider-hint">
+          0% = deforestasi total &nbsp;|&nbsp; 100% = kondisi aktual tiap sektor
+        </p>
+      </div>
+
+      <!-- Notice kondisi identik -->
+      <div id="notice-identik">
+        ℹ️ <strong>Kondisi identik dengan Hasil I.</strong>
+        Saat Intensitas CH = Densitas Pohon = 100%, skenario Hasil II identik dengan
+        kondisi aktual Hasil I. Perbedaan kecil (jika ada) adalah artefak komputasi numerik,
+        bukan perubahan nyata. Ubah salah satu slider untuk melihat skenario bermakna.
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem">
+        <a href="panduan.html" class="tombol tombol-outline">Ke Panduan</a>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <div class="spinner" id="spinner"></div>
+          <button id="btn-simulasi" class="tombol" disabled
+            data-tooltip="Pilih kecamatan terlebih dahulu">
+            Mulai Simulasi
+          </button>
+        </div>
+      </div>
+      <div id="error-box"></div>
+    </div>
+
+    <div class="sim-kanan">
+      <div id="judul-info" style="font-weight:700;color:var(--hijau-tua);
+        margin-bottom:0.65rem;font-size:0.95rem">
+        Ragam Informasi Lingkungan di Kecamatan Belum Terpilih
+      </div>
+      <div class="panel-info-kontainer">
+        <div class="panel-info">
+          <div class="panel-label">Informasi Sebaran Jenis Pohon</div>
+          <div class="panel-isi kosong" id="panel-pohon">Tidak ada data</div>
+        </div>
+        <div class="panel-info">
+          <div class="panel-label">Informasi Sebaran Jenis Tanah</div>
+          <div class="panel-isi kosong" id="panel-tanah">Tidak ada data</div>
+        </div>
+        <div class="panel-info">
+          <div class="panel-label">Kemiringan Lereng</div>
+          <div class="panel-isi kosong" id="panel-lereng">Tidak ada data</div>
+        </div>
+        <div class="panel-info">
+          <div class="panel-label">Rerata Curah Hujan Tahunan</div>
+          <div class="panel-isi kosong" id="panel-ch">Tidak ada data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  ASTA PORTAL 2026 | Tugas Akhir Mahasiswa Program Studi Matematika
+  Fakultas Sains dan Matematika Universitas Kristen Satya Wacana
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/map.js"></script>
+<script src="js/ui.js"></script>
+<script>
+// r27: GeoJSON kecamatan dibaca dari frontend (Vercel static) — bebas dari status backend.
+// Fallback bertingkat: Vercel static → PythonAnywhere → hardcoded 19 nama.
+const KEC_GEOJSON_FRONTEND = "geojson/kecamatan_semarang.geojson";
+const KEC_GEOJSON_BACKEND  = `${ASTA_CONFIG.API_BASE}/static/geojson/kecamatan_semarang.geojson`;
+
+// Fallback hardcoded — peta tidak tersedia, hanya dropdown
+const KEC_FALLBACK = [
+  "AMBARAWA","BANCAK","BANDUNGAN","BANYUBIRU","BAWEN",
+  "BERGAS","BRINGIN","GETASAN","JAMBU","KALIWUNGU",
+  "PABELAN","PRINGAPUS","SUMOWONO","SURUH","SUSUKAN",
+  "TENGARAN","TUNTANG","UNGARAN BARAT","UNGARAN TIMUR"
+];
+
+// ── State halaman ────────────────────────────────────────────────────────────
+let kecTerpilih  = null;
+let chMeanKec    = 0;
+let _modePohon   = false;
+let _modeTanah   = false;
+
+// Init peta Leaflet lebih dulu sebelum fetch async apapun
+petaInit("peta");
+
+// ── Muat GeoJSON: frontend → backend → null ──────────────────────────────────
+async function _muatGeoJSON() {
+  try { const r = await fetch(KEC_GEOJSON_FRONTEND); if (r.ok) return await r.json(); }
+  catch (_) {}
+  try { const r = await fetch(KEC_GEOJSON_BACKEND);  if (r.ok) return await r.json(); }
+  catch (_) {}
+  return null;
+}
+
+(async () => {
+  const geoJSON = await _muatGeoJSON();
+  if (geoJSON) {
+    // GeoJSON berhasil — peta dan dropdown dari data yang sama (tidak fetch ulang)
+    petaMuatKecamatan(geoJSON, onPilihKecamatan);
+    _isiDropdownDariGeoJSON(geoJSON);
+  } else {
+    // Fallback: dropdown hardcoded, peta tampil pesan
+    _isiDropdownFallback();
+    document.getElementById("peta").innerHTML =
+      `<div style="height:100%;display:flex;align-items:center;justify-content:center;
+         background:#f6faf2;border-radius:6px;color:var(--teks-redup);
+         font-size:0.88rem;text-align:center;padding:1.5rem;line-height:1.6">
+         Peta kecamatan tidak dapat dimuat.<br>
+         Gunakan dropdown di atas untuk memilih kecamatan.
+       </div>`;
+  }
+})();
+
+// ── Isi dropdown dari objek GeoJSON (tanpa fetch ulang) ──────────────────────
+function _isiDropdownDariGeoJSON(geoJSON) {
+  const sel   = document.getElementById("kec-select");
+  const fitur = (geoJSON.features || []).slice().sort(
+    (a, b) => (a.properties.ID_Dummy || 0) - (b.properties.ID_Dummy || 0)
+  );
+  sel.innerHTML = `<option value="">Pilih Kecamatan</option>`;
+  fitur.forEach(ft => {
+    const nama = ft.properties.NAME_3 || "";
+    const opt  = document.createElement("option");
+    opt.value       = nama;
+    opt.textContent = `${ft.properties.ID_Dummy}. ${nama}`;
+    sel.appendChild(opt);
+  });
+  // Satu listener saja — tidak double-bind
+  sel.addEventListener("change", () => { if (sel.value) onPilihKecamatan(sel.value); });
+}
+
+// ── Fallback dropdown dari nama hardcoded ────────────────────────────────────
+function _isiDropdownFallback() {
+  const sel = document.getElementById("kec-select");
+  sel.innerHTML = `<option value="">Pilih Kecamatan</option>`;
+  KEC_FALLBACK.forEach((nama, i) => {
+    const opt = document.createElement("option");
+    opt.value       = nama;
+    opt.textContent = `${i + 1}. ${nama}`;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener("change", () => { if (sel.value) onPilihKecamatan(sel.value); });
+}
+
+// ── Slider CH — % dan mm ekuivalen realtime ──────────────────────────────────
+const sliderCH  = document.getElementById("slider-ch");
+const sliderTCC = document.getElementById("slider-tcc");
+const elChVal   = document.getElementById("ch-val");
+const elChMm    = document.getElementById("ch-mm");
+const elTccVal  = document.getElementById("tcc-val");
+
+function _perbaruiSliderLabel() {
+  const chPct  = parseFloat(sliderCH.value);
+  const tccPct = parseFloat(sliderTCC.value);
+  elChVal.textContent  = chPct  + "%";
+  elTccVal.textContent = tccPct + "%";
+  const mm = chMeanKec > 0 ? (chPct / 100 * chMeanKec).toFixed(1) : "—";
+  elChMm.textContent = chMeanKec > 0 ? `${mm} mm` : "(pilih kecamatan dulu)";
+  // Tampilkan notice kondisi identik jika CH=100 DAN TCC=100
+  const identik = (chPct >= 99.9 && tccPct >= 99.9);
+  document.getElementById("notice-identik").style.display = identik ? "block" : "none";
+}
+
+sliderCH.addEventListener("input",  _perbaruiSliderLabel);
+sliderTCC.addEventListener("input", _perbaruiSliderLabel);
+
+// ── r27 FIX: Handler pilih kecamatan — UI bereaksi SEGERA, BARU panggil backend ─
+// Versi sebelumnya: uiSetSimulasiSiap(true) dan petaSorotKecamatan berada di dalam
+// blok try apiGetInfo, sehingga semua reaksi UI bergantung pada status backend.
+// Akibatnya: jika backend lambat atau mati, klik kecamatan = tidak ada reaksi sama sekali.
+//
+// Perbaikan r27: 3 fase terpisah:
+//   Fase 1 (sync, SEGERA)  : highlight peta, update judul, aktifkan tombol toggle
+//   Fase 2 (async, loading): panggil apiGetInfo untuk panel info + nilai mm
+//   Fase 3 (async, selesai): aktifkan/nonaktifkan btn-simulasi sesuai hasil backend
+async function onPilihKecamatan(kec) {
+  // ── Fase 1: Reaksi UI segera (tidak bergantung backend) ──────────────────
+  kecTerpilih = kec;
+  uiSinkronDropdown("kec-select", kec);
+  petaSorotKecamatan(kec);
+  document.getElementById("judul-info").textContent =
+    `Ragam Informasi Lingkungan di Kecamatan ${kec.charAt(0) + kec.slice(1).toLowerCase()}`;
+  document.getElementById("btn-pohon").disabled     = false;
+  document.getElementById("btn-tanah-btn").disabled = false;
+  _resetToggleGaya();
+  // Reset panel ke loading state — bukan "Tidak ada data"
+  ["panel-pohon","panel-tanah","panel-lereng","panel-ch"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = "Memuat…"; el.className = "panel-isi kosong"; }
+  });
+
+  // ── Fase 2 & 3: Ambil info dari backend (async) ──────────────────────────
+  try {
+    const info = await apiGetInfo(kec);
+    chMeanKec  = info.ch_mean || 0;
+    uiTampilPanelInfo(info);
+    // Backend OK → aktifkan tombol simulasi
+    uiSetSimulasiSiap("btn-simulasi", true);
+    document.getElementById("banner-backend").style.display = "none";
+    // Perbarui label mm dengan CH mean kecamatan baru
+    _perbaruiSliderLabel();
+  } catch (e) {
+    // Backend tidak merespons — panel info kosong, tombol simulasi tetap disabled
+    chMeanKec = 0;
+    uiResetPanelInfo();
+    document.getElementById("banner-backend").style.display = "block";
+    uiSetSimulasiSiap("btn-simulasi", false);
+  }
+}
+
+// ── Toggle overlay pohon / tanah ─────────────────────────────────────────────
+function _resetToggleGaya() {
+  _modePohon = false; _modeTanah = false;
+  _gayaToggle("btn-pohon",     false);
+  _gayaToggle("btn-tanah-btn", false);
+  petaToggleOverlay(null, null);
+  const elLeg = document.getElementById("legenda-overlay");
+  if (elLeg) { elLeg.innerHTML = ""; elLeg.style.display = "none"; }
+}
+
+function _gayaToggle(btnId, aktif) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.style.background  = aktif ? "var(--hijau-tua)" : "";
+  btn.style.color       = aktif ? "var(--putih)"     : "";
+  btn.style.borderColor = aktif ? "var(--hijau-tua)" : "";
+}
+
+document.getElementById("btn-pohon").addEventListener("click", () => {
+  _modePohon = !_modePohon; _modeTanah = false;
+  _gayaToggle("btn-pohon",     _modePohon);
+  _gayaToggle("btn-tanah-btn", false);
+  const p = kecTerpilih && _modePohon
+    ? `${ASTA_CONFIG.API_BASE}/static/geojson/veg_${kecTerpilih}.geojson` : null;
+  if (p) {
+    petaToggleOverlay(p, "veg").then(wm => {
+      const el = document.getElementById("legenda-overlay");
+      if (el) { petaLegendaOverlay("legenda-overlay", wm, "Jenis Vegetasi"); el.style.display = "block"; }
+    });
+  } else {
+    petaToggleOverlay(null, null);
+    const el = document.getElementById("legenda-overlay");
+    if (el) { el.innerHTML = ""; el.style.display = "none"; }
+  }
+});
+
+document.getElementById("btn-tanah-btn").addEventListener("click", () => {
+  _modeTanah = !_modeTanah; _modePohon = false;
+  _gayaToggle("btn-tanah-btn", _modeTanah);
+  _gayaToggle("btn-pohon",     false);
+  const p = kecTerpilih && _modeTanah
+    ? `${ASTA_CONFIG.API_BASE}/static/geojson/tanah_${kecTerpilih}.geojson` : null;
+  if (p) {
+    petaToggleOverlay(p, "tanah").then(wm => {
+      const el = document.getElementById("legenda-overlay");
+      if (el) { petaLegendaOverlay("legenda-overlay", wm, "Jenis Tanah"); el.style.display = "block"; }
+    });
+  } else {
+    petaToggleOverlay(null, null);
+    const el = document.getElementById("legenda-overlay");
+    if (el) { el.innerHTML = ""; el.style.display = "none"; }
+  }
+});
+
+// ── Mulai Simulasi ───────────────────────────────────────────────────────────
+document.getElementById("btn-simulasi").addEventListener("click", async () => {
+  if (!kecTerpilih) return;
+  uiBersihkanError("error-box");
+  uiSpinner(true);
+
+  const ch_pct  = parseFloat(sliderCH.value);
+  const tcc_pct = parseFloat(sliderTCC.value);
+
+  try {
+    const hasil = await apiSimulate(kecTerpilih, ch_pct, tcc_pct);
+    sessionStorage.setItem("asta_hasil",       JSON.stringify(hasil));
+    sessionStorage.setItem("asta_kec",         kecTerpilih);
+    sessionStorage.setItem("asta_ch_pct",      ch_pct);
+    sessionStorage.setItem("asta_tcc_pct",     tcc_pct);
+    sessionStorage.setItem("asta_ch_mean_kec", chMeanKec);
+    window.location.href = "hasil1.html";
+  } catch (e) {
+    uiTampilError("error-box",
+      "Koneksi ke server gagal. Pastikan PythonAnywhere aktif dan sudah di-Reload. " +
+      "Detail: " + e.message);
+  } finally {
+    uiSpinner(false);
+  }
+});
+</script>
+</body>
+</html>

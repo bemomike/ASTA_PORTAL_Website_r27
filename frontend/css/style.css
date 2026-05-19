@@ -1,0 +1,242 @@
+/* ============================================================
+   ASTA PORTAL r24 — style.css
+   Warna sesuai ketentuan ASTA_PORTAL_Anatomi_Website_r24.docx Bagian 2.10
+   ============================================================ */
+
+:root {
+  --hijau-tua:    #3A5F0B;
+  --hijau-tombol: #4A7A0F;
+  --hijau-hover:  #2D4A08;
+  --hijau-panel:  #2D5016;
+  --hijau-muda:   #D9EAD3;
+  --hijau-hl:     #A8D08D;
+  --putih:        #FFFFFF;
+  --teks-utama:   #1A1A1A;
+  --teks-redup:   #555555;
+  --border:       #C8DDB8;
+  --bayangan:     0 2px 8px rgba(0,0,0,0.14);
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+       background: var(--putih); color: var(--teks-utama);
+       min-height: 100vh; display: flex; flex-direction: column; }
+a { color: inherit; text-decoration: none; }
+
+/* ── Navbar ───────────────────────────────────────────────── */
+nav {
+  background: var(--hijau-tua);
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: var(--bayangan);
+}
+
+.nav-kiri  { display: flex; align-items: center; gap: 0.4rem; }
+.nav-links { display: flex; gap: 0.15rem; list-style: none; }
+.nav-links a {
+  display: block; padding: 0.38rem 0.8rem; border-radius: 4px;
+  color: var(--hijau-muda); font-size: 0.88rem;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover, .nav-links a.aktif {
+  background: rgba(255,255,255,0.18); color: var(--putih);
+}
+
+/* Logo di navbar */
+.nav-logo { height: 36px; width: auto; object-fit: contain; }
+
+/* Logo ganda di pojok kanan navbar */
+.nav-logo-grup { display: flex; align-items: center; gap: 0.4rem; }
+
+/* ── Header & Footer ─────────────────────────────────────── */
+header { background: var(--hijau-tua); color: var(--putih);
+         padding: 1.1rem 1.5rem; text-align: center; }
+header h1 { font-size: 1.45rem; font-weight: 700; }
+header p  { font-size: 0.88rem; margin-top: 0.25rem; color: var(--hijau-muda); }
+
+footer {
+  background: var(--hijau-tua); color: var(--hijau-muda);
+  padding: 0.85rem 1.5rem; text-align: center;
+  font-size: 0.8rem; margin-top: auto;
+}
+
+/* ── Main ─────────────────────────────────────────────────── */
+main { flex: 1; padding: 1.25rem;
+       max-width: 1200px; margin: 0 auto; width: 100%; }
+
+/* ── Tombol ───────────────────────────────────────────────── */
+.tombol {
+  display: inline-block; background: var(--hijau-tombol); color: var(--putih);
+  border: none; padding: 0.55rem 1.35rem; border-radius: 5px;
+  cursor: pointer; font-size: 0.9rem; font-weight: 600;
+  transition: background 0.15s, transform 0.1s;
+}
+.tombol:hover   { background: var(--hijau-hover); transform: translateY(-1px); }
+.tombol:active  { transform: translateY(0); }
+.tombol:disabled{ background: #aaa; cursor: not-allowed; transform: none; }
+.tombol-outline {
+  background: transparent; border: 2px solid var(--hijau-tua);
+  color: var(--hijau-tua);
+}
+.tombol-outline:hover { background: var(--hijau-tua); color: var(--putih); }
+
+/* ── Kartu ────────────────────────────────────────────────── */
+.kartu {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 1.1rem; background: var(--putih);
+  box-shadow: var(--bayangan); margin-bottom: 0.9rem;
+}
+
+/* ── Tabel ────────────────────────────────────────────────── */
+.tabel-wrap { overflow-x: auto; }
+table  { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 560px; }
+th     { background: var(--hijau-tua); color: var(--putih);
+         padding: 0.52rem 0.7rem; text-align: left; white-space: nowrap; }
+td     { padding: 0.46rem 0.7rem; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) td { background: #f4f9f0; }
+
+/* ── Slider ───────────────────────────────────────────────── */
+.slider-wrap { margin-bottom: 0.9rem; }
+.slider-wrap label {
+  display: flex; justify-content: space-between;
+  font-size: 0.84rem; margin-bottom: 0.28rem;
+  color: var(--hijau-tua); font-weight: 600;
+}
+.slider-wrap input[type="range"] {
+  width: 100%; accent-color: var(--hijau-tua); min-height: 22px;
+}
+.slider-hint { font-size: 0.74rem; color: var(--teks-redup); margin-top: 0.2rem; }
+
+/* ── Peta ─────────────────────────────────────────────────── */
+#peta { height: 390px; border-radius: 7px; border: 1px solid var(--border); }
+
+/* ── Panel Info Simulasi (ruas kanan, bisa di-scroll) ─────── */
+.panel-info-kontainer {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  padding-right: 4px;
+}
+
+/* Legenda overlay warna per jenis */
+.legenda-overlay {
+  margin-top: 0.5rem; padding: 0.45rem 0.7rem;
+  background: #f9f9f9; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.panel-info {
+  border: 1px solid var(--border); border-radius: 7px; overflow: hidden;
+}
+.panel-label {
+  background: var(--hijau-tua); color: var(--putih);
+  padding: 0.42rem 0.85rem; font-weight: 600; font-size: 0.85rem;
+}
+.panel-isi {
+  background: var(--putih); color: var(--hijau-panel);
+  padding: 0.65rem 0.85rem; font-size: 0.83rem; line-height: 1.55;
+}
+/* Panel veg/tanah dibatasi tinggi dan bisa di-scroll */
+.panel-isi.scrollable {
+  max-height: 130px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hijau-tua) #f0f0f0;
+}
+.panel-isi.scrollable::-webkit-scrollbar { width: 5px; }
+.panel-isi.scrollable::-webkit-scrollbar-thumb {
+  background: var(--hijau-tua); border-radius: 3px;
+}
+.panel-isi.kosong { color: var(--teks-redup); font-style: italic; }
+
+/* ── Narasi hasil (kotak hijau gelap) ─────────────────────── */
+.narasi-kotak {
+  background: var(--hijau-panel); color: var(--putih);
+  border-radius: 8px; padding: 1rem 1.2rem;
+  font-size: 0.9rem; line-height: 1.65;
+  margin-bottom: 0.75rem;
+}
+.disclaimer {
+  background: #fffbe6; border: 1px solid #f0d060; border-radius: 6px;
+  padding: 0.6rem 0.9rem; font-size: 0.8rem; color: #6b5900; margin-top: 0.6rem;
+}
+
+/* ── Header hasil (hijau lebar, mirip PDF) ─────────────────── */
+.hasil-header {
+  background: var(--hijau-tua); color: var(--putih);
+  border-radius: 7px; padding: 1rem 1.25rem;
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 1rem; margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.hasil-header h2 { font-size: 1.15rem; font-weight: 700; flex: 1; }
+.hasil-header-nav {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;
+}
+.hasil-header-nav .timestamp {
+  font-size: 0.78rem; color: var(--hijau-muda); margin-bottom: 0.15rem;
+}
+.hasil-header-nav .tombol-grup {
+  display: flex; gap: 0.4rem;
+}
+
+/* ── Legenda peta ─────────────────────────────────────────── */
+.legenda { margin-top: 0.55rem; padding: 0.4rem 0.6rem;
+           font-size: 0.78rem; color: var(--teks-redup);
+           display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.legenda strong { color: var(--hijau-tua); }
+
+/* ── Slideshow Beranda ────────────────────────────────────── */
+.slideshow {
+  position: relative; width: 100%; height: 320px;
+  border-radius: 8px; overflow: hidden; margin-bottom: 1.2rem;
+}
+.slideshow-slide {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity 1s ease-in-out;
+}
+.slideshow-slide.aktif { opacity: 1; }
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.spinner {
+  display: none; width: 26px; height: 26px;
+  border: 3px solid var(--border); border-top-color: var(--hijau-tua);
+  border-radius: 50%; animation: putar 0.6s linear infinite; margin: 0 auto;
+}
+@keyframes putar { to { transform: rotate(360deg); } }
+
+/* ── Pesan error ─────────────────────────────────────────── */
+.pesan-error {
+  background: #fde8e8; border: 1px solid #f5c6c6;
+  border-radius: 5px; padding: 0.65rem 0.9rem;
+  color: #c0392b; font-size: 0.86rem; margin-top: 0.4rem;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip); position: absolute; bottom: 110%; left: 50%;
+  transform: translateX(-50%); background: #333; color: #fff;
+  font-size: 0.74rem; padding: 4px 8px; border-radius: 4px;
+  white-space: nowrap; pointer-events: none; opacity: 0;
+  transition: opacity 0.15s;
+}
+[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Tombol Unduh ─────────────────────────────────────────── */
+.grup-unduh { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sim-layout { flex-direction: column !important; }
+  .nav-links a { padding: 0.3rem 0.55rem; font-size: 0.8rem; }
+  .panel-info-kontainer { max-height: none; overflow-y: visible; }
+  #peta { height: 300px; }
+  .hasil-header { flex-direction: column; }
+  .hasil-header-nav { align-items: flex-start; }
+}

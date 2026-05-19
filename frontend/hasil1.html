@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTA PORTAL — Hasil I</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-kiri">
+    <ul class="nav-links">
+      <li><a href="index.html"             >Beranda</a></li>
+      <li><a href="panduan.html"           >Panduan</a></li>
+      <li><a href="simulasi.html"          >Simulasi</a></li>
+      <li><a href="hasil1.html" class="aktif">Hasil I</a></li>
+      <li><a href="hasil2.html"            >Hasil II</a></li>
+    </ul>
+  </div>
+  <div class="nav-logo-grup">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
+    <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<main>
+  <div class="hasil-header">
+    <h2 id="judul-hasil">
+      Hasil Simulasi Prediksi Potensi Longsor di Wilayah Kecamatan — I
+    </h2>
+    <div class="hasil-header-nav">
+      <span class="timestamp" id="timestamp-hasil">—</span>
+      <div class="tombol-grup">
+        <a href="simulasi.html" class="tombol tombol-outline"
+          style="font-size:0.82rem;padding:0.38rem 0.85rem;
+                 color:var(--putih);border-color:var(--hijau-muda)">
+          Ke Simulasi
+        </a>
+        <a href="hasil2.html" class="tombol"
+          style="font-size:0.82rem;padding:0.38rem 0.85rem">
+          Hasil 2
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div id="info-ch-a" style="font-size:0.82rem;color:var(--teks-redup);
+    margin-bottom:0.75rem;padding:0.4rem 0.75rem;background:#f6faf2;
+    border-radius:5px;border-left:3px solid var(--hijau-tua)">
+  </div>
+
+  <div class="kartu" style="padding:0.5rem">
+    <div id="peta" style="height:340px"></div>
+    <div class="legenda">
+      <strong>Legenda Indeks:</strong>&nbsp;
+      <div id="legenda-peta" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:2px"></div>
+    </div>
+  </div>
+
+  <div id="narasi-kotak"></div>
+
+  <div class="kartu">
+    <div id="tabel-kotak">
+      <p style="color:#888;font-style:italic">Memuat tabel hasil simulasi…</p>
+    </div>
+    <!-- FIX: tombol unduh dipindah ke dalam script agar _kec sudah terdefinisi -->
+    <div class="grup-unduh" id="grup-unduh-1"></div>
+  </div>
+</main>
+
+<footer>
+  ASTA PORTAL 2026 | Tugas Akhir Mahasiswa Program Studi Matematika
+  Fakultas Sains dan Matematika Universitas Kristen Satya Wacana
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/map.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/hasil.js"></script>
+<script>
+  const _hasilRaw  = sessionStorage.getItem("asta_hasil");
+  const _kec       = sessionStorage.getItem("asta_kec")          || "—";
+  const _chMeanKec = parseFloat(sessionStorage.getItem("asta_ch_mean_kec") || "0");
+
+  // petaInit wajib dipanggil di sini — sebelum kondisi — agar div #peta
+  // sudah diinisialisasi Leaflet sebelum konten apapun dirender
+  petaInit("peta");
+  petaLegenda("legenda-peta");
+
+  if (!_hasilRaw) {
+    // Guard lentur: navbar Hasil I tetap bisa diklik, tapi tanpa data
+    // langsung redirect ke Simulasi setelah 2 detik
+    document.getElementById("judul-hasil").textContent =
+      "Hasil Simulasi Prediksi Potensi Longsor di Wilayah Kecamatan — I";
+    document.getElementById("narasi-kotak").innerHTML =
+      `<div class="kartu" style="color:#888;text-align:center;padding:2rem">
+         Belum ada data simulasi. Anda akan diarahkan ke halaman Simulasi…
+       </div>`;
+    document.getElementById("tabel-kotak").innerHTML = "";
+    hasilTimestamp("timestamp-hasil");
+    setTimeout(() => { window.location.href = "simulasi.html"; }, 2000);
+  } else {
+
+  // Judul sesuai format PDF p.9
+  document.getElementById("judul-hasil").textContent =
+    `Hasil Simulasi Prediksi Potensi Longsor di Wilayah Kecamatan ${
+      _kec.charAt(0) + _kec.slice(1).toLowerCase()} I`;
+
+  hasilTimestamp("timestamp-hasil");
+
+  // Info CH: Hasil I = 100% dari CH_MEAN kecamatan
+  const _chMmA = _chMeanKec > 0 ? `${_chMeanKec.toFixed(1)} mm` : "—";
+  document.getElementById('info-ch-a').textContent =
+    `ℹ️ Hasil I — Kondisi Aktual Historis: ` +
+    `CH = 100% rerata tahunan = ${_chMmA} | Populasi Pohon = 100% (kondisi nyata). ` +
+    `Gunakan Hasil II untuk membandingkan dengan skenario slider Anda.`;
+
+  // Tombol unduh — dibuat di sini agar _kec sudah terdefinisi
+  document.getElementById("grup-unduh-1").innerHTML = `
+    <button class="tombol tombol-outline" style="font-size:0.82rem;padding:0.38rem 0.85rem"
+      onclick="hasilUnduhCSV('${_kec}','PRED_A')">⬇ Unduh Tabel (CSV)</button>
+    <button class="tombol tombol-outline" style="font-size:0.82rem;padding:0.38rem 0.85rem"
+      onclick="hasilUnduhPeta('${_kec}','PRED_A')">⬇ Unduh Peta (PNG)</button>`;
+
+  const hasil       = JSON.parse(_hasilRaw);
+  const geoFeatures = hasil.features || [];
+
+  if (geoFeatures.length) {
+    petaRenderHasil({ type: "FeatureCollection", features: geoFeatures }, "PRED_A");
+  } else {
+    // Live inference tidak memiliki geometri → tampilkan keterangan pengganti
+    document.getElementById("peta").innerHTML =
+      `<div style="height:100%;display:flex;align-items:center;justify-content:center;
+         background:#f6faf2;border-radius:6px;color:var(--teks-redup);
+         font-size:0.88rem;text-align:center;padding:1.5rem;line-height:1.6">
+         Peta sektor tidak tersedia (mode live inference).<br>
+         Upload <strong>simulasi_batch_19kec.geojson</strong> dari Sel Export-5 notebook
+         ke PythonAnywhere → klik Reload untuk mengaktifkan peta.
+       </div>`;
+  }
+
+  hasilRenderTabel("tabel-kotak", hasil, "PRED_A", "CH_AKTIF_A");
+  hasilNarasi("narasi-kotak", _kec, hasil, "PRED_A",
+    `data aktual (CH 100% = ${_chMmA})`);
+  }
+</script>
+</body>
+</html>

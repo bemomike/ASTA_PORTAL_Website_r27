@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTA PORTAL — Panduan</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-kiri">
+    <ul class="nav-links">
+      <li><a href="index.html"              >Beranda</a></li>
+      <li><a href="panduan.html"  class="aktif">Panduan</a></li>
+      <li><a href="simulasi.html"            >Simulasi</a></li>
+      <li><a href="hasil1.html"              >Hasil I</a></li>
+      <li><a href="hasil2.html"              >Hasil II</a></li>
+    </ul>
+  </div>
+  <div class="nav-logo-grup">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
+    <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<main>
+  <div class="kartu">
+    <h2 style="color:var(--hijau-tua);margin-bottom:1rem">Panduan Penggunaan Website ASTA PORTAL</h2>
+    <ul style="line-height:2;padding-left:1.2rem">
+      <li>
+        Pengguna dapat terlebih dahulu menyimak ragam informasi yang dicantumkan di halaman Beranda
+        terutama ragam layanan yang tersedia di website ini.
+      </li>
+      <li>
+        Pengguna dapat mengakses berbagai tautan sumber data di bawah panduan ini untuk mengetahui
+        data mana saja yang digunakan dalam simulasi di website ini di halaman Panduan.
+      </li>
+      <li>
+        Pada halaman Simulasi, pengguna dipersilakan untuk memilih salah satu kecamatan yang tersedia,
+        nantinya akan muncul ragam informasi mengenai sebaran ragam jenis pohon dan tanah dengan memilih
+        salah satu pilihan yaitu <em>Informasi Sebaran Jenis Pohon</em> dan
+        <em>Informasi Sebaran Jenis Tanah</em> serta ragam tingkat kemiringan lereng di kecamatan terpilih,
+        kemudian pengguna dapat bebas memilih intensitas curah hujan dan densitas populasi pohon dengan
+        menggeser nilainya lalu lanjut mengklik opsi <strong>Mulai Simulasi</strong>.
+      </li>
+      <li>
+        Setelah mengklik opsi Mulai Simulasi, sistem akan memproses masukan dari pengguna seperti
+        kecamatan yang telah dipilih dan nilai persentase dari intensitas curah hujan dan densitas
+        populasi pohon. Pengguna akan diarahkan ke <strong>Hasil I</strong> terlebih dahulu untuk
+        mengetahui versi aktual yang tidak menggunakan masukan intensitas curah hujan dan densitas
+        populasi pohon dari pengguna, kemudian pengguna dapat bebas mengakses <strong>Hasil II</strong>
+        yang menggunakan 3 masukan utama dari pengguna sendiri. Dipersilakan untuk mengambil tangkapan
+        layar dan/atau mengambil unduhan untuk 2 versi hasil simulasinya.
+      </li>
+      <li>Selamat mencoba website ini.</li>
+    </ul>
+  </div>
+
+  <!-- Tabel sumber data sesuai PDF p.2 -->
+  <div class="kartu">
+    <div class="tabel-wrap">
+      <table>
+        <thead>
+          <tr><th>Kelas</th><th>Tautan</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Administrasi</td>
+            <td><a href="https://gadm.org" target="_blank" style="color:var(--hijau-tombol)">https://gadm.org</a></td>
+          </tr>
+          <tr>
+            <td>Jenis Tanah</td>
+            <td><a href="https://sitangkas-ugm-gis.hub.arcgis.com/datasets/jenis-tanah-kabupaten-semarang-2" target="_blank" style="color:var(--hijau-tombol)">sitangkas-ugm-gis.hub.arcgis.com</a></td>
+          </tr>
+          <tr>
+            <td>Kemiringan Lereng</td>
+            <td><a href="https://sitangkas-ugm-gis.hub.arcgis.com/datasets/kemiringan-lereng-kabupaten-semarang" target="_blank" style="color:var(--hijau-tombol)">sitangkas-ugm-gis.hub.arcgis.com</a></td>
+          </tr>
+          <tr>
+            <td>Vegetasi (4 sub-dataset)</td>
+            <td><a href="https://www.indonesia-geospasial.com/2020/01/shp-rbi-provinsi-jawa-tengah-perwilayah.html" target="_blank" style="color:var(--hijau-tombol)">indonesia-geospasial.com</a></td>
+          </tr>
+          <tr>
+            <td>Curah Hujan</td>
+            <td><a href="https://semarangkab.bps.go.id" target="_blank" style="color:var(--hijau-tombol)">https://semarangkab.bps.go.id</a></td>
+          </tr>
+          <tr>
+            <td>Rekam Bencana</td>
+            <td><a href="https://semarangkab.bps.go.id" target="_blank" style="color:var(--hijau-tombol)">https://semarangkab.bps.go.id</a></td>
+          </tr>
+          <tr>
+            <td>Populasi Vegetasi (TCC)</td>
+            <td><a href="https://data.globalforestwatch.org/datasets/a72920c18d854bd1b622c6d1ee44e2f5_0/explore" target="_blank" style="color:var(--hijau-tombol)">data.globalforestwatch.org</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
+    <a href="index.html"    class="tombol tombol-outline">Ke Beranda</a>
+    <a href="simulasi.html" class="tombol">Ke Simulasi</a>
+  </div>
+</main>
+
+<footer>
+  ASTA PORTAL 2026 | Tugas Akhir Mahasiswa Program Studi Matematika
+  Fakultas Sains dan Matematika Universitas Kristen Satya Wacana
+</footer>
+
+</body>
+</html>

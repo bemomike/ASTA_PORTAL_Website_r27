@@ -1,0 +1,5 @@
+Folder ini sengaja dikosongkan di GitHub.
+Upload file berikut ke folder ini setelah git clone/pull di PythonAnywhere:
+  - simulasi_batch_19kec.geojson   (dari Export-5 notebook Colab)
+  - ringkasan_batch_19kec.json     (dari Export-5b notebook Colab)
+Cara upload: PythonAnywhere → tab Files → navigasi ke folder ini → Upload a file

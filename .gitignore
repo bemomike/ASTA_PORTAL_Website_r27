@@ -1,0 +1,33 @@
+# ── Model PKL besar — upload manual ke PythonAnywhere, JANGAN push ke GitHub ──
+backend/app/model/trained/*.pkl
+
+# ── Data dinamis dari notebook — upload manual ke PythonAnywhere ───────────────
+backend/app/data/static/rf_static_data.py
+backend/app/data/batch/simulasi_batch_19kec.geojson
+backend/app/data/batch/ringkasan_batch_19kec.json
+backend/app/data/geojson/*.geojson
+
+# ── PENTING: frontend/geojson TIDAK dikecualikan — harus ikut push ke GitHub ──
+# frontend/geojson/kecamatan_semarang.geojson → WAJIB ada di GitHub/Vercel
+
+# ── Python cache ───────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── OS ─────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ── Editor ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Temporary ──────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+_geojson_tmp_asta/

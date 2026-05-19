@@ -1,0 +1,4 @@
+Folder ini sengaja dikosongkan di GitHub.
+Upload 62 file GeoJSON ke folder ini menggunakan script:
+  bash ~/ASTA_PORTAL_Website_r27/upload_geojson.sh
+(setelah upload ZIP ke ~/ via PythonAnywhere → tab Files)

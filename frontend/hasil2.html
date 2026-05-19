@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTA PORTAL — Hasil II</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-kiri">
+    <ul class="nav-links">
+      <li><a href="index.html"              >Beranda</a></li>
+      <li><a href="panduan.html"            >Panduan</a></li>
+      <li><a href="simulasi.html"           >Simulasi</a></li>
+      <li><a href="hasil1.html"             >Hasil I</a></li>
+      <li><a href="hasil2.html" class="aktif">Hasil II</a></li>
+    </ul>
+  </div>
+  <div class="nav-logo-grup">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
+    <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<main>
+  <div class="hasil-header">
+    <h2 id="judul-hasil">
+      Hasil Simulasi Prediksi Potensi Longsor di Wilayah Kecamatan — II
+    </h2>
+    <div class="hasil-header-nav">
+      <span class="timestamp" id="timestamp-hasil">—</span>
+      <div class="tombol-grup">
+        <a href="simulasi.html" class="tombol tombol-outline"
+          style="font-size:0.82rem;padding:0.38rem 0.85rem;
+                 color:var(--putih);border-color:var(--hijau-muda)">
+          Ke Simulasi
+        </a>
+        <a href="hasil1.html" class="tombol"
+          style="font-size:0.82rem;padding:0.38rem 0.85rem">
+          Hasil 1
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div id="info-ch-b" style="font-size:0.82rem;color:var(--teks-redup);
+    margin-bottom:0.75rem;padding:0.4rem 0.75rem;background:#f6faf2;
+    border-radius:5px;border-left:3px solid var(--hijau-tua)">
+  </div>
+
+  <!-- Ringkasan Δ -->
+  <div class="kartu" style="display:flex;gap:1.5rem;flex-wrap:wrap;
+    align-items:center;margin-bottom:0.9rem">
+    <div style="text-align:center;flex:1;min-width:120px">
+      <div style="font-size:0.78rem;color:var(--teks-redup)">Rerata Aktual (I)</div>
+      <div id="avg-a" style="font-size:1.5rem;font-weight:700;color:var(--hijau-tua)">—</div>
+    </div>
+    <div style="font-size:1.4rem;color:var(--teks-redup)">→</div>
+    <div style="text-align:center;flex:1;min-width:120px">
+      <div style="font-size:0.78rem;color:var(--teks-redup)">Rerata Skenario (II)</div>
+      <div id="avg-b" style="font-size:1.5rem;font-weight:700;color:#c0392b">—</div>
+    </div>
+    <div style="font-size:1.4rem;color:var(--teks-redup)">→</div>
+    <div style="text-align:center;flex:1;min-width:120px">
+      <div style="font-size:0.78rem;color:var(--teks-redup)">Perubahan (Δ)</div>
+      <div id="avg-delta" style="font-size:1.5rem;font-weight:700">—</div>
+    </div>
+  </div>
+
+  <div class="kartu" style="padding:0.5rem">
+    <div id="peta" style="height:340px"></div>
+    <div class="legenda">
+      <strong>Legenda Indeks:</strong>&nbsp;
+      <div id="legenda-peta" style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:2px"></div>
+    </div>
+  </div>
+
+  <div id="narasi-kotak"></div>
+
+  <div class="kartu">
+    <div id="tabel-kotak">
+      <p style="color:#888;font-style:italic">Memuat tabel hasil simulasi…</p>
+    </div>
+    <div class="grup-unduh" id="grup-unduh-2"></div>
+  </div>
+</main>
+
+<footer>
+  ASTA PORTAL 2026 | Tugas Akhir Mahasiswa Program Studi Matematika
+  Fakultas Sains dan Matematika Universitas Kristen Satya Wacana
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/map.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/hasil.js"></script>
+<script>
+  // r25 FIX: Baca semua state SEBELUM melakukan operasi DOM apapun.
+  // Versi lama men-set judul sebelum cek _hasilRaw, sehingga judul
+  // "... Kecamatan — II" muncul selama 2 detik sebelum redirect.
+  const _hasilRaw  = sessionStorage.getItem("asta_hasil");
+  const _kec       = sessionStorage.getItem("asta_kec")           || "—";
+  const _chPct     = parseFloat(sessionStorage.getItem("asta_ch_pct")      || "0");
+  const _tccPct    = parseFloat(sessionStorage.getItem("asta_tcc_pct")     || "0");
+  const _chMeanKec = parseFloat(sessionStorage.getItem("asta_ch_mean_kec") || "0");
+
+  // petaInit wajib dipanggil sebelum if/else — agar div #peta
+  // sudah diinisialisasi Leaflet sebelum konten apapun dirender
+  petaInit("peta");
+  petaLegenda("legenda-peta");
+  hasilTimestamp("timestamp-hasil");
+
+  if (!_hasilRaw) {
+    // r25 FIX: judul di-set SETELAH guard, bukan sebelumnya
+    document.getElementById("judul-hasil").textContent =
+      "Hasil Simulasi Prediksi Potensi Longsor di Wilayah Kecamatan — II";
+    document.getElementById("narasi-kotak").innerHTML =
+      `<div class="kartu" style="color:#888;text-align:center;padding:2rem">
+         Belum ada data simulasi. Anda akan diarahkan ke halaman Simulasi…
+       </div>`;
+    document.getElementById("tabel-kotak").innerHTML = "";
+    setTimeout(() => { window.location.href = "simulasi.html"; }, 2000);
+  } else {
+    // Set judul hanya jika data tersedia
+    document.getElementById("judul-hasil").textContent =
+      `Hasil Simulasi Prediksi Potensi Longsor di Wilayah Kecamatan ${
+        _kec.charAt(0) + _kec.slice(1).toLowerCase()} II`;
+
+    const _chMmB = _chMeanKec > 0
+      ? `${(_chPct / 100 * _chMeanKec).toFixed(1)} mm` : "—";
+    document.getElementById("info-ch-b").textContent =
+      `Curah Hujan (Keputusan Pengguna): ${_chPct}% dari rerata tahunan Kecamatan ${
+        _kec.charAt(0)+_kec.slice(1).toLowerCase()} = ${_chMmB} | Populasi Pohon: ${_tccPct}%`;
+
+    // Tombol unduh — dibuat di sini agar _kec sudah terdefinisi
+    document.getElementById("grup-unduh-2").innerHTML = `
+      <button class="tombol tombol-outline" style="font-size:0.82rem;padding:0.38rem 0.85rem"
+        onclick="hasilUnduhCSV('${_kec}','PRED_B')">⬇ Unduh Tabel (CSV)</button>
+      <button class="tombol tombol-outline" style="font-size:0.82rem;padding:0.38rem 0.85rem"
+        onclick="hasilUnduhPeta('${_kec}','PRED_B')">⬇ Unduh Peta (PNG)</button>`;
+
+    const hasil   = JSON.parse(_hasilRaw);
+    const sektor  = hasil.features
+      ? hasil.features.map(f => f.properties)
+      : (hasil.results || []);
+
+    // Hitung Δ dengan normalisasi r25 (clamp 0–100, no threshold trick)
+    if (sektor.length) {
+      const norm  = v => Math.min(Math.max(parseFloat(v) || 0, 0), 100);
+      const avgA  = sektor.reduce((s,r) => s + norm(r.PRED_A||0), 0) / sektor.length;
+      const avgB  = sektor.reduce((s,r) => s + norm(r.PRED_B||0), 0) / sektor.length;
+      const delta = avgB - avgA;
+
+      document.getElementById("avg-a").textContent = avgA.toFixed(2) + "%";
+      document.getElementById("avg-b").textContent = avgB.toFixed(2) + "%";
+      const elD = document.getElementById("avg-delta");
+      elD.textContent = (delta >= 0 ? "+" : "") + delta.toFixed(2) + "%";
+      elD.style.color = delta > 0 ? "#c0392b"
+        : delta < 0 ? "var(--hijau-tua)" : "var(--teks-redup)";
+    }
+
+    const geoFeatures = hasil.features || [];
+    if (geoFeatures.length) {
+      petaRenderHasil({ type: "FeatureCollection", features: geoFeatures }, "PRED_B");
+    } else {
+      document.getElementById("peta").innerHTML =
+        `<div style="height:100%;display:flex;align-items:center;justify-content:center;
+           background:#f6faf2;border-radius:6px;color:var(--teks-redup);
+           font-size:0.88rem;text-align:center;padding:1.5rem;line-height:1.6">
+           Peta sektor tidak tersedia (mode live inference).<br>
+           Upload <strong>simulasi_batch_19kec.geojson</strong> dari Sel Export-5 notebook
+           ke PythonAnywhere → klik Reload untuk mengaktifkan peta.
+         </div>`;
+    }
+
+    const _chMmBNarasi = _chMeanKec > 0
+      ? `${(_chPct / 100 * _chMeanKec).toFixed(1)} mm` : "—";
+    hasilRenderTabel("tabel-kotak", hasil, "PRED_B", "CH_AKTIF_B");
+    hasilNarasi("narasi-kotak", _kec, hasil, "PRED_B",
+      `keputusan pengguna (CH ${_chPct}% = ${_chMmBNarasi}, Pohon ${_tccPct}%)`);
+  }
+</script>
+</body>
+</html>
