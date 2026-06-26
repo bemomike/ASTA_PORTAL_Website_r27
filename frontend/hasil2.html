@@ -20,8 +20,8 @@
     </ul>
   </div>
   <div class="nav-logo-grup">
-    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
     <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo" onerror="this.style.display='none'">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
   </div>
 </nav>
 
@@ -106,7 +106,9 @@
   const _hasilRaw  = sessionStorage.getItem("asta_hasil");
   const _kec       = sessionStorage.getItem("asta_kec")           || "—";
   const _chPct     = parseFloat(sessionStorage.getItem("asta_ch_pct")      || "0");
-  const _tccPct    = parseFloat(sessionStorage.getItem("asta_tcc_pct")     || "0");
+  const _vegNF     = parseFloat(sessionStorage.getItem("asta_veg_nf") || "1.0");
+  const _vegAF     = parseFloat(sessionStorage.getItem("asta_veg_af") || "1.0");
+  const _vegPV     = parseFloat(sessionStorage.getItem("asta_veg_pv") || "1.0");
   const _chMeanKec = parseFloat(sessionStorage.getItem("asta_ch_mean_kec") || "0");
 
   // petaInit wajib dipanggil sebelum if/else — agar div #peta
@@ -134,8 +136,8 @@
     const _chMmB = _chMeanKec > 0
       ? `${(_chPct / 100 * _chMeanKec).toFixed(1)} mm` : "—";
     document.getElementById("info-ch-b").textContent =
-      `Curah Hujan (Keputusan Pengguna): ${_chPct}% dari rerata tahunan Kecamatan ${
-        _kec.charAt(0)+_kec.slice(1).toLowerCase()} = ${_chMmB} | Populasi Pohon: ${_tccPct}%`;
+      `Curah Hujan: ${_chPct}% dari rerata tahunan Kecamatan ${
+        _kec.charAt(0)+_kec.slice(1).toLowerCase()} = ${_chMmB} | Faktor Kanopi — NF: ${_vegNF.toFixed(2)} · AF: ${_vegAF.toFixed(2)} · PV: ${_vegPV.toFixed(2)}`;
 
     // Tombol unduh — dibuat di sini agar _kec sudah terdefinisi
     document.getElementById("grup-unduh-2").innerHTML = `
@@ -182,8 +184,7 @@
       ? `${(_chPct / 100 * _chMeanKec).toFixed(1)} mm` : "—";
     hasilRenderTabel("tabel-kotak", hasil, "PRED_B", "CH_AKTIF_B");
     hasilNarasi("narasi-kotak", _kec, hasil, "PRED_B",
-      `keputusan pengguna (CH ${_chPct}% = ${_chMmBNarasi}, Pohon ${_tccPct}%)`);
-  }
+      `keputusan pengguna (CH ${_chPct}% = ${_chMmBNarasi}, Kanopi NF: ${_vegNF.toFixed(2)} · AF: ${_vegAF.toFixed(2)} · PV: ${_vegPV.toFixed(2)})`);
 </script>
 </body>
 </html>

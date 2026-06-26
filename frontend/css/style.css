@@ -32,7 +32,7 @@ nav {
   align-items: center;
   justify-content: space-between;
   height: 54px;
-  position: sticky; top: 0; z-index: 200;
+  position: sticky; top: 0; z-index: 1000;
   box-shadow: var(--bayangan);
 }
 
@@ -113,7 +113,13 @@ tr:nth-child(even) td { background: #f4f9f0; }
 .slider-hint { font-size: 0.74rem; color: var(--teks-redup); margin-top: 0.2rem; }
 
 /* ── Peta ─────────────────────────────────────────────────── */
-#peta { height: 390px; border-radius: 7px; border: 1px solid var(--border); }
+#peta {
+  height: 390px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  position: relative;  /* eksplisit — Leaflet sudah set ini, tapi lebih aman eksplisit */
+  z-index: 0;          /* bentuk stacking context → kurung semua z-index Leaflet di dalam */
+}
 
 /* ── Panel Info Simulasi (ruas kanan, bisa di-scroll) ─────── */
 .panel-info-kontainer {

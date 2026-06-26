@@ -1,4 +1,4 @@
-PLACEHOLDER — Isi dari Export-2 dan Export-3b/3c notebook r24
+PLACEHOLDER — Isi dari Export-2 dan Export-3b/3c notebook r27
 
 Struktur file yang dibutuhkan:
   kabupaten_semarang.geojson     ← Export-1

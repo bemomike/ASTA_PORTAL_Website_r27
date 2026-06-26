@@ -1,17 +1,17 @@
 #!/bin/bash
-# upload_geojson.sh — ASTA PORTAL r24
+# upload_geojson.sh — ASTA PORTAL r27
 # Dijalankan di Bash PythonAnywhere setelah upload file ZIP GeoJSON ke ~/
 #
 # Cara pakai:
-#   bash ~/ASTA_PORTAL_Website_r24/upload_geojson.sh
+#   bash ~/ASTA_PORTAL_Website_r27/upload_geojson.sh
 #
 # Script ini otomatis mencari file ZIP GeoJSON di folder home (~/)
 # tanpa perlu mengganti nama file ZIP terlebih dahulu.
 
-TARGET="$HOME/ASTA_PORTAL_Website_r24/backend/app/data/geojson"
+TARGET="$HOME/ASTA_PORTAL_Website_r27/backend/app/data/geojson"
 
 echo "=================================================="
-echo "ASTA PORTAL r24 — Upload GeoJSON"
+echo "ASTA PORTAL r27 — Upload GeoJSON"
 echo "=================================================="
 
 # ── Cari file ZIP GeoJSON secara otomatis ──────────────────────────────────

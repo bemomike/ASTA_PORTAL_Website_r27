@@ -41,8 +41,8 @@
     </ul>
   </div>
   <div class="nav-logo-grup">
-    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
     <img src="assets/images/logo_uksw.png"     alt="Logo UKSW"     class="nav-logo" onerror="this.style.display='none'">
+    <img src="assets/images/logo_fsm_uksw.png" alt="Logo FSM UKSW" class="nav-logo" onerror="this.style.display='none'">
   </div>
 </nav>
 
@@ -85,37 +85,75 @@
           <span>Intensitas Curah Hujan</span>
           <strong id="ch-val">100%</strong>
         </label>
-        <input type="range" id="slider-ch" min="0" max="100" value="100" step="0.5">
+        <input type="range" id="slider-ch" min="10" max="150" value="100" step="0.5">
         <div class="mm-label">
           Nilai ekuivalen: <span id="ch-mm">(pilih kecamatan dulu)</span>
           &nbsp;dari rerata tahunan kecamatan terpilih
         </div>
         <div class="mm-ref">
-          Referensi maksimum Kabupaten Semarang: 2057.668421 mm/tahun
+          Rerata tahunan tertinggi Kabupaten Semarang: 2057.668421 mm/tahun
+          &nbsp;|&nbsp; Rentang faktor: [0.10–1.50] sesuai notebook SEL 1
         </div>
         <p class="slider-hint" style="margin-top:0.2rem">
-          0% = kering total &nbsp;|&nbsp; 100% = kondisi aktual historis kecamatan terpilih
+          10% = minimum model (0.10×aktual) &nbsp;|&nbsp; 100% = kondisi aktual &nbsp;|&nbsp; 150% = maksimum model (1.50×aktual)
         </p>
       </div>
 
-      <!-- Slider Populasi Pohon -->
-      <div class="slider-wrap">
+      <!-- 3 Slider Tutupan Kanopi Vegetasi — sesuai notebook SEL 1 -->
+      <div style="margin-bottom:0.4rem;padding:0.35rem 0.6rem;
+        background:var(--hijau-muda);border-radius:5px;border-left:3px solid var(--hijau-tua)">
+        <span style="font-weight:700;font-size:0.84rem;color:var(--hijau-tua)">
+          Faktor Tutupan Kanopi Vegetasi
+        </span>
+        <span style="font-size:0.74rem;color:var(--teks-redup)">
+          &nbsp;— [0.10–1.50] &nbsp;|&nbsp; 1.00 = aktual &nbsp;|&nbsp;
+          &lt;1.00 = deforestasi &nbsp;|&nbsp; &gt;1.00 = reboisasi
+        </span>
+      </div>
+
+      <div class="slider-wrap" style="margin-bottom:0.6rem">
         <label>
-          <span>Densitas Populasi Pohon</span>
-          <strong id="tcc-val">100%</strong>
+          <span>Hutan Alam (NF)</span>
+          <strong id="veg-nf-val">1.00</strong>
         </label>
-        <input type="range" id="slider-tcc" min="0" max="100" value="100" step="0.5">
+        <input type="range" id="slider-veg-nf"
+          min="0.10" max="1.50" value="1.00" step="0.05">
         <p class="slider-hint">
-          0% = deforestasi total &nbsp;|&nbsp; 100% = kondisi aktual tiap sektor
+          Hutan Rimba &amp; Vegetasi Non Budidaya Lainnya
+        </p>
+      </div>
+
+      <div class="slider-wrap" style="margin-bottom:0.6rem">
+        <label>
+          <span>Agroforestri (AF)</span>
+          <strong id="veg-af-val">1.00</strong>
+        </label>
+        <input type="range" id="slider-veg-af"
+          min="0.10" max="1.50" value="1.00" step="0.05">
+        <p class="slider-hint">
+          Kopi, Tanaman Campur, Albasia/Bambu/Kelapa, Mahoni/Jati/Karet/Teh
+        </p>
+      </div>
+
+      <div class="slider-wrap" style="margin-bottom:0.6rem">
+        <label>
+          <span>Vegetasi Produksi (PV)</span>
+          <strong id="veg-pv-val">1.00</strong>
+        </label>
+        <input type="range" id="slider-veg-pv"
+          min="0.10" max="1.50" value="1.00" step="0.05">
+        <p class="slider-hint">
+          Albasia, Jati, Karet, Semak Belukar, Perkebunan Umum
         </p>
       </div>
 
       <!-- Notice kondisi identik -->
       <div id="notice-identik">
         ℹ️ <strong>Kondisi identik dengan Hasil I.</strong>
-        Saat Intensitas CH = Densitas Pohon = 100%, skenario Hasil II identik dengan
-        kondisi aktual Hasil I. Perbedaan kecil (jika ada) adalah artefak komputasi numerik,
-        bukan perubahan nyata. Ubah salah satu slider untuk melihat skenario bermakna.
+        Saat Intensitas CH = 100% dan semua Faktor Kanopi (NF/AF/PV) = 1.00,
+        skenario Hasil II identik dengan kondisi aktual Hasil I.
+        Perbedaan kecil (jika ada) adalah artefak komputasi numerik, bukan perubahan nyata.
+        Ubah salah satu slider untuk melihat skenario bermakna.
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem">
@@ -252,25 +290,38 @@ function _isiDropdownFallback() {
 
 // ── Slider CH — % dan mm ekuivalen realtime ──────────────────────────────────
 const sliderCH  = document.getElementById("slider-ch");
-const sliderTCC = document.getElementById("slider-tcc");
+const sliderVegNF = document.getElementById("slider-veg-nf");
+const sliderVegAF = document.getElementById("slider-veg-af");
+const sliderVegPV = document.getElementById("slider-veg-pv");
 const elChVal   = document.getElementById("ch-val");
 const elChMm    = document.getElementById("ch-mm");
-const elTccVal  = document.getElementById("tcc-val");
+const elVegNFVal  = document.getElementById("veg-nf-val");
+const elVegAFVal  = document.getElementById("veg-af-val");
+const elVegPVVal  = document.getElementById("veg-pv-val");
 
 function _perbaruiSliderLabel() {
-  const chPct  = parseFloat(sliderCH.value);
-  const tccPct = parseFloat(sliderTCC.value);
-  elChVal.textContent  = chPct  + "%";
-  elTccVal.textContent = tccPct + "%";
+  const chPct = parseFloat(sliderCH.value);
+  const vegNF = parseFloat(sliderVegNF.value);
+  const vegAF = parseFloat(sliderVegAF.value);
+  const vegPV = parseFloat(sliderVegPV.value);
+  elChVal.textContent    = chPct + "%";
+  elVegNFVal.textContent = vegNF.toFixed(2);
+  elVegAFVal.textContent = vegAF.toFixed(2);
+  elVegPVVal.textContent = vegPV.toFixed(2);
   const mm = chMeanKec > 0 ? (chPct / 100 * chMeanKec).toFixed(1) : "—";
   elChMm.textContent = chMeanKec > 0 ? `${mm} mm` : "(pilih kecamatan dulu)";
-  // Tampilkan notice kondisi identik jika CH=100 DAN TCC=100
-  const identik = (chPct >= 99.9 && tccPct >= 99.9);
+  // Kondisi identik: CH=100% DAN semua faktor vegetasi ≈ 1.00
+  const vegAktual = (vegNF >= 0.995 && vegNF <= 1.005 &&
+                     vegAF >= 0.995 && vegAF <= 1.005 &&
+                     vegPV >= 0.995 && vegPV <= 1.005);
+  const identik = (chPct >= 99.9 && vegAktual);
   document.getElementById("notice-identik").style.display = identik ? "block" : "none";
 }
 
-sliderCH.addEventListener("input",  _perbaruiSliderLabel);
-sliderTCC.addEventListener("input", _perbaruiSliderLabel);
+sliderCH.addEventListener("input",    _perbaruiSliderLabel);
+sliderVegNF.addEventListener("input", _perbaruiSliderLabel);
+sliderVegAF.addEventListener("input", _perbaruiSliderLabel);
+sliderVegPV.addEventListener("input", _perbaruiSliderLabel);
 
 // ── r27 FIX: Handler pilih kecamatan — UI bereaksi SEGERA, BARU panggil backend ─
 // Versi sebelumnya: uiSetSimulasiSiap(true) dan petaSorotKecamatan berada di dalam
@@ -376,15 +427,19 @@ document.getElementById("btn-simulasi").addEventListener("click", async () => {
   uiBersihkanError("error-box");
   uiSpinner(true);
 
-  const ch_pct  = parseFloat(sliderCH.value);
-  const tcc_pct = parseFloat(sliderTCC.value);
+  const ch_pct = parseFloat(sliderCH.value);
+  const veg_nf = parseFloat(sliderVegNF.value);
+  const veg_af = parseFloat(sliderVegAF.value);
+  const veg_pv = parseFloat(sliderVegPV.value);
 
   try {
-    const hasil = await apiSimulate(kecTerpilih, ch_pct, tcc_pct);
+    const hasil = await apiSimulate(kecTerpilih, ch_pct, veg_nf, veg_af, veg_pv);
     sessionStorage.setItem("asta_hasil",       JSON.stringify(hasil));
     sessionStorage.setItem("asta_kec",         kecTerpilih);
     sessionStorage.setItem("asta_ch_pct",      ch_pct);
-    sessionStorage.setItem("asta_tcc_pct",     tcc_pct);
+    sessionStorage.setItem("asta_veg_nf",      veg_nf);
+    sessionStorage.setItem("asta_veg_af",      veg_af);
+    sessionStorage.setItem("asta_veg_pv",      veg_pv);
     sessionStorage.setItem("asta_ch_mean_kec", chMeanKec);
     window.location.href = "hasil1.html";
   } catch (e) {

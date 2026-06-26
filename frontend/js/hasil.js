@@ -1,25 +1,20 @@
 // ============================================================
-//  hasil.js — ASTA PORTAL r26
+//  hasil.js — ASTA PORTAL r28
 //  Tabel 8 kolom sesuai PDF p.9-10, diurut tertinggi→terendah,
 //  narasi otomatis, disclaimer wajib, timestamp, unduh CSV+PNG
 //
-//  r25 PERBAIKAN:
-//  - _norm(): hapus threshold < 2 yang menyebabkan nilai batch 0–2
-//    dikali 100 secara salah.
-//  - hasilNarasi(): tambah notice kondisi identik (CH=100, TCC=100)
-//
-//  r26 PERBAIKAN:
-//  - hasilNarasi(): tambah notice "live_inference: false" — ketika
-//    rf_static_data.py tidak tersedia, PRED_B diambil dari batch
-//    (skenario tetap CH=98.45%, TCC=44.85%), bukan dari slider pengguna.
-//    Notice ini muncul di Hasil II dan menjelaskan keterbatasan tersebut.
-//  - hasilNarasi(): tambah notice dua slider berlawanan arah — ketika
-//    CH turun DAN TCC turun bersamaan, RF menghitung kedua efek sekaligus.
-//    Efek CH sering mendominasi efek TCC karena CH berbobot 11.2% di RF
-//    vs semua fitur vegetasi hanya 1.92%. Ini bukan anomali melainkan
-//    perilaku model yang mencerminkan data historis rekam bencana.
-//  - labelDeltaKonteks(): fungsi baru — menjelaskan Δ dengan konteks
-//    apakah itu naik/turun signifikan dan mengapa.
+//  r28 PERUBAHAN:
+//  - tccPct (single slider 0–100%) dihapus. Diganti 3 faktor:
+//    vegNF, vegAF, vegPV (masing-masing rentang [0.10–1.50])
+//    sesuai notebook SEL 1: x_Veg_1_2, x_Veg_2_2, x_Veg_3_2
+//  - _vegTurun: true jika salah satu faktor < 0.99 (deforestasi)
+//  - _vegAktual: true jika semua faktor dalam toleransi ≈ 1.00
+//  - labelDeltaKonteks(): parameter ke-3 diganti boolean tccTurun
+//    langsung (tidak lagi menerima angka tccPct)
+//  - Notice 1 (kondisi identik): cek _vegAktual bukan tccPct>=99.9
+//  - Notice 3 (dua slider berlawanan): teks diperbarui untuk 3 faktor
+//  - CH sekarang bisa > 100% (max 150%) — semua threshold yang
+//    bergantung chPct > 101 sudah benar sejak r26 (tidak perlu ubah)
 // ============================================================
 
 /* ── Kategori ──────────────────────────────────────────────── */
@@ -38,9 +33,6 @@ function labelKemiringan(gc) {
 }
 
 /* ── Normalisasi nilai PRED ke 0–100 ──────────────────────── */
-// r25 FIX: Kedua jalur (batch dan live inference) sudah mengirim
-// nilai dalam skala 0–100 ke frontend. Fungsi ini hanya memastikan
-// nilai tidak keluar dari rentang valid [0, 100].
 function _norm(v) {
   return Math.min(Math.max(parseFloat(v) || 0, 0), 100);
 }
@@ -106,11 +98,12 @@ function hasilRenderTabel(containerId, data, predKey, chKey) {
 }
 
 /* ── Konteks delta untuk narasi ─────────────────────────────── */
-// Menjelaskan arah Δ dengan mempertimbangkan kondisi slider
-function labelDeltaKonteks(delta, chPct, tccPct) {
-  const chTurun  = chPct  < 99.0;
-  const tccTurun = tccPct < 99.0;
-  const chNaik   = chPct  > 101.0;
+// r28: parameter ke-3 diubah menjadi boolean tccTurun langsung
+// (bukan angka tccPct) agar tidak bergantung pada konsep "100%"
+// yang tidak relevan saat faktor vegetasi dalam rentang [0.10–1.50]
+function labelDeltaKonteks(delta, chPct, tccTurun) {
+  const chTurun = chPct < 99.0;
+  const chNaik  = chPct > 101.0;
 
   if (!chTurun && !tccTurun && !chNaik) return ""; // kondisi aktual, tidak perlu konteks
 
@@ -144,55 +137,67 @@ function hasilNarasi(containerId, kec, data, predKey, jenisData) {
   const nilMax   = nilaiArr[iMax].toFixed(2);
   const katMax   = labelPotensi(parseFloat(nilMax));
 
-  const chPct  = parseFloat(sessionStorage.getItem("asta_ch_pct")  || "100");
-  const tccPct = parseFloat(sessionStorage.getItem("asta_tcc_pct") || "100");
-  const liveInf = data.live_inference !== false; // true jika tidak ada kunci, atau kunci true
+  // Baca state slider dari sessionStorage
+  const chPct   = parseFloat(sessionStorage.getItem("asta_ch_pct")  || "100");
+  // r28: 3 faktor vegetasi menggantikan tccPct
+  const vegNF   = parseFloat(sessionStorage.getItem("asta_veg_nf")  || "1.0");
+  const vegAF   = parseFloat(sessionStorage.getItem("asta_veg_af")  || "1.0");
+  const vegPV   = parseFloat(sessionStorage.getItem("asta_veg_pv")  || "1.0");
+
+  // Komposit: apakah ada deforestasi (salah satu faktor < 0.99)?
+  const _vegTurun  = (vegNF < 0.99 || vegAF < 0.99 || vegPV < 0.99);
+  // Komposit: apakah semua faktor vegetasi pada kondisi aktual (≈ 1.00)?
+  const _vegAktual = (vegNF >= 0.995 && vegNF <= 1.005 &&
+                      vegAF >= 0.995 && vegAF <= 1.005 &&
+                      vegPV >= 0.995 && vegPV <= 1.005);
+
+  const liveInf = data.live_inference !== false;
 
   // Hitung Δ terhadap PRED_A (hanya relevan untuk Hasil II)
   let deltaRerata = null;
   if (predKey === "PRED_B") {
-    const nilaiA = sektor.map(s => _norm(s["PRED_A"] || 0));
-    const rerataA = nilaiA.reduce((a,b) => a+b, 0) / nilaiA.length;
-    deltaRerata = parseFloat(rerata) - rerataA;
+    const nilaiA  = sektor.map(s => _norm(s["PRED_A"] || 0));
+    const rerataA = nilaiA.reduce((a, b) => a + b, 0) / nilaiA.length;
+    deltaRerata   = parseFloat(rerata) - rerataA;
   }
 
   // Notices
   let notices = "";
 
-  // Notice 1: kondisi identik (slider di 100%/100%)
-  if (predKey === "PRED_B" && chPct >= 99.9 && tccPct >= 99.9) {
+  // Notice 1: kondisi identik — CH=100% DAN semua faktor vegetasi = 1.00
+  if (predKey === "PRED_B" && chPct >= 99.9 && _vegAktual) {
     notices += `<div class="disclaimer" style="border-left-color:#e67e22;background:#fff8f0;margin-top:0.5rem">
-      ⚠️ <strong>Kondisi identik dengan Hasil I (CH=100%, Pohon=100%).</strong>
+      ⚠️ <strong>Kondisi identik dengan Hasil I (CH=100%, semua faktor kanopi=1.00).</strong>
       Nilai Δ yang muncul adalah artefak normalisasi komputasi, bukan perubahan nyata.
-      Ubah slider CH atau Populasi Pohon untuk melihat skenario yang bermakna.
+      Ubah slider CH atau salah satu faktor kanopi (NF/AF/PV) untuk melihat skenario yang bermakna.
     </div>`;
   }
 
   // Notice 2: PRED_B dari batch (rf_static_data.py tidak tersedia di server)
   if (predKey === "PRED_B" && !liveInf) {
     notices += `<div class="disclaimer" style="border-left-color:#c0392b;background:#fff5f5;margin-top:0.5rem">
-      ⚠️ <strong>Nilai Hasil II diambil dari data pre-computed (CH≈98%, Pohon≈45%).</strong>
+      ⚠️ <strong>Nilai Hasil II diambil dari data pre-computed (CH≈98%, faktor vegetasi ≈aktual).</strong>
       File rf_static_data.py tidak tersedia di server, sehingga slider Anda tidak berdampak
       pada nilai ini. Untuk mengaktifkan simulasi interaktif, upload rf_static_data.py
       (dari Sel Export-4 notebook) ke <code>backend/app/data/static/</code> lalu Reload.
     </div>`;
   }
 
-  // Notice 3: dua slider berlawanan arah
-  const chTurun  = chPct  < 99.0;
-  const tccTurun = tccPct < 99.0;
-  if (predKey === "PRED_B" && chTurun && tccTurun && deltaRerata !== null && deltaRerata < -2) {
+  // Notice 3: dua slider berlawanan arah (CH turun DAN vegetasi berkurang)
+  const chTurun = chPct < 99.0;
+  if (predKey === "PRED_B" && chTurun && _vegTurun && deltaRerata !== null && deltaRerata < -2) {
+    const _vegStr = `NF: ${vegNF.toFixed(2)}, AF: ${vegAF.toFixed(2)}, PV: ${vegPV.toFixed(2)}`;
     notices += `<div class="disclaimer" style="border-left-color:#8e44ad;background:#fdf5ff;margin-top:0.5rem">
       ℹ️ <strong>Efek CH mendominasi efek deforestasi.</strong>
-      Dalam skenario ini, curah hujan turun ${(100-chPct).toFixed(0)}% DAN populasi pohon
-      turun ${(100-tccPct).toFixed(0)}% sekaligus. Penurunan curah hujan mendominasi
+      Dalam skenario ini, curah hujan turun ${(100-chPct).toFixed(0)}% DAN tutupan kanopi
+      vegetasi berkurang (${_vegStr}) sekaligus. Penurunan curah hujan mendominasi
       karena CH berbobot 11.2% di model RF, sedangkan semua fitur vegetasi gabungan hanya 1.92%.
-      Untuk melihat murni efek deforestasi, gunakan CH=100% dan turunkan slider Pohon saja.
+      Untuk melihat murni efek deforestasi, gunakan CH=100% dan turunkan faktor kanopi saja.
     </div>`;
   }
 
   const konteks = deltaRerata !== null
-    ? labelDeltaKonteks(deltaRerata, chPct, tccPct)
+    ? labelDeltaKonteks(deltaRerata, chPct, _vegTurun)
     : "";
   const deltaStr = deltaRerata !== null
     ? ` (Δ <strong>${deltaRerata > 0 ? "+" : ""}${deltaRerata.toFixed(2)}%</strong>${konteks})`
