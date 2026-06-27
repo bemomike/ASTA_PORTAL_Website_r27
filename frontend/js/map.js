@@ -160,6 +160,10 @@ function _hapusMask() {
 }
 
 /* ── Toggle overlay veg/tanah dengan warna per jenis ─────────── */
+// r28+: Kliping geometri menggunakan Turf.js (intersect) agar polygon
+// veg/tanah TIDAK melampaui batas kecamatan terpilih.
+// Mask semi-transparan lama tidak memotong data secara geometri (opacity 60%
+// → 40% bleeding tetap tampak). Turf.js melakukan intersection sesungguhnya.
 async function petaToggleOverlay(geojsonPath, mode) {
   if (_layerOverlay) { _peta.removeLayer(_layerOverlay); _layerOverlay = null; }
   _hapusMask();
@@ -167,14 +171,35 @@ async function petaToggleOverlay(geojsonPath, mode) {
   const data = await fetch(geojsonPath).then(r => r.json()).catch(() => null);
   if (!data) return null;
 
+  // ── Clip ke batas kecamatan terpilih menggunakan Turf.js ──────────────
+  let displayFeatures = data.features;
+  if (_kecTerpilih && _kecGeoJSON && typeof turf !== "undefined") {
+    const kecFeat = _kecGeoJSON.features.find(
+      f => f.properties.NAME_3 === _kecTerpilih
+    );
+    if (kecFeat) {
+      const clipped = [];
+      for (const feat of data.features) {
+        try {
+          const irisan = turf.intersect(feat, kecFeat);
+          if (irisan) {
+            irisan.properties = feat.properties;
+            clipped.push(irisan);
+          }
+        } catch (_) { /* lewati geometri invalid */ }
+      }
+      displayFeatures = clipped;
+    }
+  }
+
   const prop      = mode === "veg" ? "LABEL_VEG" : "MACAM_TANA";
   const paletDict = mode === "veg" ? WARNA_VEG   : WARNA_TANAH;
   const defColor  = "#cccccc";
-  const jenisSet  = [...new Set(data.features.map(f => f.properties[prop]||"").filter(Boolean))].sort();
+  const jenisSet  = [...new Set(displayFeatures.map(f => f.properties[prop]||"").filter(Boolean))].sort();
   const warnaMap  = {};
   jenisSet.forEach(j => { warnaMap[j] = paletDict[j] || defColor; });
 
-  _layerOverlay = L.geoJSON(data, {
+  _layerOverlay = L.geoJSON({ type: "FeatureCollection", features: displayFeatures }, {
     style: (f) => ({
       fillColor:   warnaMap[f.properties[prop]||""] || defColor,
       fillOpacity: 0.72, color: "#333", weight: 0.8,
@@ -185,7 +210,8 @@ async function petaToggleOverlay(geojsonPath, mode) {
     },
   }).addTo(_peta);
 
-  if (_kecTerpilih) _tampilMask(_kecTerpilih);
+  // Fallback mask jika Turf.js tidak tersedia (tidak memotong sempurna)
+  if (_kecTerpilih && typeof turf === "undefined") _tampilMask(_kecTerpilih);
   return warnaMap;
 }
 

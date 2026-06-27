@@ -258,27 +258,39 @@ def simulate():
                     if "PRED_A" not in p and "PRED_VAL" in p:
                         p["PRED_A"] = p["PRED_VAL"]
 
-                    # PRED_B: live inference per-sektor dengan faktor vegetasi yang tepat
+                    # PRED_A + PRED_B: live inference per-sektor
+                    # r28+: PRED_A juga dihitung ulang agar konsisten dengan
+                    # normalisasi/model saat ini. PRED_A dari batch bisa
+                    # basi jika NORM_P5/NORM_P95 atau rf_model.pkl berubah.
                     if _rf_tersedia and _row_match is not None:
-                        _pred_a_ref = float(p.get("PRED_A", 0))
-                        # Pilih faktor vegetasi berdasarkan LABEL_VEG sektor ini
                         _tk_sektor  = _tk_per_sektor(p.get("LABEL_VEG", ""))
-                        _pred_b_raw = _inference(_rf, _row_match, _fk_b, _tk_sektor)
 
-                        _p5  = float(_ns2.get("NORM_P5",  _pred_b_raw))
-                        _p95 = float(_ns2.get("NORM_P95", _pred_b_raw))
+                        _p5  = float(_ns2.get("NORM_P5",  0.0))
+                        _p95 = float(_ns2.get("NORM_P95", 100.0))
                         _sp  = _p95 - _p5
+
+                        # — Hitung PRED_A (kondisi aktual ch=1.0, tcc=1.0)
+                        _pred_a_raw  = _inference(_rf, _row_match, 1.0, 1.0)
+                        if _sp < 1e-9:
+                            _pred_a_norm = 50.0
+                        else:
+                            _pred_a_norm = float(np.clip(
+                                (_pred_a_raw - _p5) / _sp * 100.0, 0, 100))
+                        # boost: ch_faktor=1.0 tcc_faktor=1.0 → ch_effect=0 tcc_effect=0
+                        p["PRED_A"] = _boost(_pred_a_norm, 1.0, 1.0, _pred_a_norm, row=_row_match)
+
+                        # — Hitung PRED_B (kondisi skenario)
+                        _pred_b_raw = _inference(_rf, _row_match, _fk_b, _tk_sektor)
                         if _sp < 1e-9:
                             _pred_b_norm = 50.0
                         else:
                             _pred_b_norm = float(np.clip(
                                 (_pred_b_raw - _p5) / _sp * 100.0, 0, 100))
-
                         p["PRED_B"] = _boost(
-                            _pred_b_norm, _fk_b, _tk_sektor, _pred_a_ref, row=_row_match
+                            _pred_b_norm, _fk_b, _tk_sektor, p["PRED_A"], row=_row_match
                         )
                     else:
-                        # Fallback: gunakan PRED_B dari batch
+                        # Fallback: gunakan nilai dari batch (bisa basi)
                         if "PRED_B" not in p and "PRED_VAL" in p:
                             p["PRED_B"] = p["PRED_VAL"]
 
