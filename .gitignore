@@ -1,33 +1,42 @@
-# ── Model PKL besar — upload manual ke PythonAnywhere, JANGAN push ke GitHub ──
+# ════════════════════════════════════════════════════════════
+#  .gitignore — ASTA_PORTAL_Website_r27
+#  File ini menentukan apa yang TIDAK dimasukkan ke GitHub.
+#  Upload file di bawah ini MANUAL ke PythonAnywhere via Tab Files.
+# ════════════════════════════════════════════════════════════
+
+# ── Model PKL — terlalu besar untuk GitHub (upload manual ke PythonAnywhere) ─
 backend/app/model/trained/*.pkl
 
-# ── Data dinamis dari notebook — upload manual ke PythonAnywhere ───────────────
+# ── Data dinamis dari notebook — upload manual ke PythonAnywhere ─────────────
 backend/app/data/static/rf_static_data.py
 backend/app/data/batch/simulasi_batch_19kec.geojson
 backend/app/data/batch/ringkasan_batch_19kec.json
+
+# ── GeoJSON kecamatan detail — upload manual ke PythonAnywhere ───────────────
 backend/app/data/geojson/*.geojson
 
-# ── PENTING: frontend/geojson TIDAK dikecualikan — harus ikut push ke GitHub ──
-# frontend/geojson/kecamatan_semarang.geojson → WAJIB ada di GitHub/Vercel
+# ── CATATAN: frontend/geojson/kecamatan_semarang.geojson WAJIB ikut GitHub ───
+# (file ini digunakan oleh peta interaktif — tidak boleh dikecualikan)
 
-# ── Python cache ───────────────────────────────────────────────────────────────
+# ── Python cache ─────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# ── OS ─────────────────────────────────────────────────────────────────────────
+# ── File tidak perlu di repository ───────────────────────────────────────────
+vercel.json
+PANDUAN_REVISI_*.md
+SIMULASI_LONGSOR_*.ipynb
+*.log
+*.tmp
+
+# ── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-ehthumbs.db
 
-# ── Editor ─────────────────────────────────────────────────────────────────────
+# ── Editor ───────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# ── Temporary ──────────────────────────────────────────────────────────────────
-*.log
-*.tmp
-_geojson_tmp_asta/

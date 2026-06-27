@@ -1,11 +1,14 @@
 import sys
 import os
 
-# ── Path ke folder backend di PythonAnywhere ──────────────────────────────────
-# Sesuaikan nama folder jika berbeda dari ASTA_PORTAL_r27
-# Contoh jika folder di-upload dengan nama asli: /home/mikeomed/ASTA_PORTAL_r26/backend
-# Contoh jika tetap pakai nama lama:             /home/mikeomed/ASTA_PORTAL_Website_r24/backend
-_project_home = "/home/mikeomed/ASTA_PORTAL_r27/backend"
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  SATU-SATUNYA BARIS YANG PERLU DIUBAH SAAT PINDAH AKUN         ║
+# ║  Ganti "mikeomed" dengan username PythonAnywhere Anda           ║
+_USERNAME    = "mikeomed"                  # ← GANTI ini
+_FOLDER_NAME = "ASTA_PORTAL_Website_r27"  # ← JANGAN diubah
+# ╚══════════════════════════════════════════════════════════════════╝
+
+_project_home = f"/home/{_USERNAME}/{_FOLDER_NAME}/backend"
 if _project_home not in sys.path:
     sys.path.insert(0, _project_home)
 

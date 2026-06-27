@@ -15,9 +15,9 @@ app.register_blueprint(simulate_bp)
 app.register_blueprint(info_bp)
 
 # ── Path ─────────────────────────────────────────────────────────────────────
-# __file__ = .../ASTA_PORTAL_Website_r28/backend/app/main.py
+# __file__ = .../ASTA_PORTAL_Website_r27/backend/app/main.py
 _APP_DIR      = Path(__file__).resolve().parent          # .../backend/app/
-_FRONTEND_DIR = str(_APP_DIR.parent.parent / "frontend") # .../ASTA_PORTAL_Website_r28/frontend/
+_FRONTEND_DIR = str(_APP_DIR.parent.parent / "frontend") # .../ASTA_PORTAL_Website_r27/frontend/
 _GEOJSON_DIR  = str(_APP_DIR / "data" / "geojson")      # .../backend/app/data/geojson/
 
 
