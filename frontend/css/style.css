@@ -208,6 +208,42 @@ tr:nth-child(even) td { background: #f4f9f0; }
 }
 .slideshow-slide.aktif { opacity: 1; }
 
+/* ── Overlay Judul di atas Slideshow ─────────────────────── */
+.slideshow-overlay {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  background: rgba(0,0,0,0.44);
+  padding: 1.5rem 2rem;
+  pointer-events: none;        /* klik tetap menembus ke slide */
+}
+.judul-besar {
+  color: #ffffff;
+  font-size: 2.1rem; font-weight: 800;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+  margin-bottom: 0.35rem;
+}
+.judul-sub {
+  color: var(--hijau-muda);
+  font-size: 1rem; font-weight: 600;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  margin-bottom: 0.5rem;
+}
+.judul-ta {
+  color: #e8e8e8;
+  font-size: 0.80rem; font-weight: 400;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.55);
+  max-width: 600px; line-height: 1.5;
+}
+@media (max-width: 768px) {
+  .slideshow { height: 240px; }
+  .judul-besar { font-size: 1.4rem; }
+  .judul-sub   { font-size: 0.85rem; }
+  .judul-ta    { font-size: 0.72rem; }
+}
+
 /* ── Spinner ──────────────────────────────────────────────── */
 .spinner {
   display: none; width: 26px; height: 26px;

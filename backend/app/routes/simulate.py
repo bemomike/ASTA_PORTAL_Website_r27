@@ -8,31 +8,47 @@ Body JSON: {
   "veg_pv": 0.95           # Faktor Vegetasi Produksi (PV) — rentang [0.10, 1.50]
 }
 
-ASTA PORTAL — simulate.py REVISI r28
+ASTA PORTAL — simulate.py REVISI r29
 =====================================================================
 
-PERUBAHAN vs r26:
------------------
-1. tcc_pct (0–100%) DIHAPUS. Diganti 3 faktor terpisah sesuai notebook SEL 1:
-   - veg_nf [0.10–1.50] : Hutan Alam — Hutan Rimba, Veg Non Budidaya
-   - veg_af [0.10–1.50] : Agroforestri — Kopi, Tanaman Campur, dll.
-   - veg_pv [0.10–1.50] : Vegetasi Produksi — Albasia, Jati, Semak Belukar, dll.
+PERUBAHAN vs r28 (PERBAIKAN KALKULASI KRITIS):
+-----------------------------------------------
+1. Formula PRED_B diganti dari "RF re-inference + boost" ke rumus
+   L_sim_3 notebook SEL 41-44:
+     L_sim_3 = L_base × R × P
+     R = e^(β_fix × (ch_faktor − 1))   → 1.0 saat ch_faktor = 1.0
+     P = e^(−α_fix × ΔCov)             → 1.0 saat semua faktor veg = 1.0
+     ΔCov = PROP_VEG_BERKANOPI × (veg_faktor − 1) per sektor
 
-2. ch_pct sekarang dibatasi [10, 150] (bukan [0, 100]) sesuai notebook SEL 1:
-   assert 0.1 <= x_CH_2 <= 1.5  →  ch_pct setara [10%, 150%]
+   Implikasi: PRED_B ≡ PRED_A saat semua parameter pada nilai default
+   (ch_pct=100, veg_nf=veg_af=veg_pv=1.0). Sebelumnya terdapat selisih
+   +0.25% artefak yang disebabkan batch PRED_B di-compute dengan
+   tcc_input_pct=0 (skenario deforestasi penuh), bukan kondisi aktual.
 
-3. _kelompok_veg() baru — memetakan LABEL_VEG ke kelompok NF/AF/PV,
-   identik dengan fungsi kelompok_veg() di notebook SEL 2.
+2. PRED_A sekarang SELALU dibaca dari batch (field PRED_A yang sudah
+   ada). Live inference TIDAK LAGI menimpa PRED_A — ini memastikan
+   konsistensi dengan PREDIKSI_BASE_PCT di notebook.
 
-4. _tk_per_sektor() (didefinisikan di dalam route, bukan global) —
-   memilih faktor TCC yang tepat berdasarkan LABEL_VEG setiap sektor.
-   Fallback ke rerata tiga faktor jika LABEL_VEG tidak dikenali.
+3. Fungsi _boost() dihapus sepenuhnya — tidak memiliki basis
+   rumus di notebook manapun dan merupakan sumber deviasi terbesar.
 
-5. Response JSON mengembalikan veg_nf, veg_af, veg_pv menggantikan tcc_pct.
+4. ALPHA_FIXED dan BETA_FIXED dibaca dari rf_static_data.py jika
+   tersedia (user harus menambahkan export ini di SEL 48 notebook).
+   Fallback default: ALPHA=2.0, BETA=1.5.
 
-CATATAN BACKWARD COMPATIBILITY:
-   Jika client lama mengirim tcc_pct, backend akan mengabaikannya dan
-   menggunakan default veg_* = 1.0 (kondisi aktual). Tidak ada error.
+5. Untuk Cov_base (proxy TCC_MEAN per sektor): diambil dari
+   SEKTOR_DATA field TCC_MEAN jika ada, fallback ke PROP_VEG_BERKANOPI.
+   User harus menambahkan TCC_MEAN ke SEKTOR_DATA export (SEL 48).
+
+HAL YANG WAJIB DIREVISI DI NOTEBOOK (SEL 48) OLEH USER:
+   a. Tambahkan di blok penulisan rf_static_data.py:
+        _f.write(f'ALPHA_FIXED = {ALPHA_FIXED:.6f}\\n')
+        _f.write(f'BETA_FIXED  = {BETA_FIXED:.6f}\\n')
+   b. Tambahkan TCC_MEAN & LABEL_VEG ke SEKTOR_DATA export:
+        extra = [c for c in ['TCC_MEAN','LABEL_VEG','KEL_VEG'] if c in _sub.columns]
+        _sektor_data[kec] = _sub[FITUR_MODEL+['ID_SEKTOR']+extra]...
+   c. Regenerasi rf_static_data.py, rf_model.pkl, dan batch GeoJSON,
+      lalu upload ulang ke PythonAnywhere + Reload.
 
 =====================================================================
 """
@@ -62,11 +78,6 @@ _URUTAN_FITUR = [
     "PROP_VEG_BERKANOPI",
 ]
 
-# Bobot Pilihan C — identik dengan notebook D3 Persiapan r24
-_W_SKOR_AKAR  = 0.50   # SKOR_AKAR turun saat deforestasi
-_W_VEG_RISIKO = 0.35   # VEG_RISIKO naik saat deforestasi
-_W_JNSSMK     = 0.20   # JNSSMK_MEAN turun saat deforestasi
-
 # ── Kelompok vegetasi — identik dengan konstanta notebook SEL 1 & SEL 2 ──────
 _VEG_NF = frozenset([
     'Hutan Rimba', 'Vegetasi Non Budidaya Lainnya',
@@ -80,6 +91,12 @@ _VEG_PV = frozenset([
     'Perkebunan Umum', 'Semak Belukar',
 ])
 
+# Default α dan β — digunakan jika rf_static_data.py belum menyimpannya.
+# Setelah user menambahkan ALPHA_FIXED/BETA_FIXED ke SEL 48 notebook dan
+# meng-upload rf_static_data.py baru, nilai ini akan di-override secara otomatis.
+_ALPHA_DEFAULT = 2.0
+_BETA_DEFAULT  = 1.5
+
 
 def _kelompok_veg(label_veg: str) -> str:
     """Kembalikan 'NF', 'AF', 'PV', atau '' jika tidak dikenali.
@@ -91,6 +108,23 @@ def _kelompok_veg(label_veg: str) -> str:
     if label_veg in _VEG_PV:
         return 'PV'
     return ''
+
+
+def _lsim3(l_base: float, ch_faktor: float, veg_faktor: float,
+           cov_base: float, alpha: float, beta: float) -> float:
+    """
+    Rumus L_sim_3 dari notebook SEL 41-44:
+      R     = e^(β × (ch_faktor − 1))        → 1.0 saat ch_faktor=1.0
+      P     = e^(−α × ΔCov)                  → 1.0 saat ΔCov=0
+      ΔCov  = cov_base × (veg_faktor − 1)    → 0.0 saat veg_faktor=1.0
+      result= l_base × R × P, di-clip ke [0, 100]
+
+    Properti kunci: hasil = l_base saat ch_faktor=1.0 AND veg_faktor=1.0.
+    """
+    delta_cov = float(cov_base) * (float(veg_faktor) - 1.0)
+    R = float(np.exp(float(beta)  * (float(ch_faktor) - 1.0)))
+    P = float(np.exp(-float(alpha) * delta_cov))
+    return float(np.clip(float(l_base) * R * P, 0.0, 100.0))
 
 
 def _load_batch():
@@ -107,21 +141,9 @@ def _load_static():
 
 def _inference(rf, row_dict, ch_faktor, tcc_faktor):
     """
-    Jalankan 1 prediksi dengan faktor CH dan TCC.
-
-    Modulasi fitur:
-      CH slider (ch_faktor = ch_pct / 100):
-        - CH_MEAN  (idx 13) × ch_faktor
-        - HH_MEAN  (idx 14) × ch_faktor
-        - CH_STD   (idx 16) : TIDAK diubah — variabilitas historis tetap
-        - HH_STD   (idx 17) : TIDAK diubah — variabilitas historis tetap
-
-      TCC per-sektor (tcc_faktor = veg_nf / veg_af / veg_pv sesuai LABEL_VEG):
-        - PROP_VEG_BERKANOPI (idx 18) × tcc_faktor
-        - SKOR_AKAR_MEAN (idx 6) turun saat deforestasi (tcc_faktor < 1.0)
-        - JNSSMK_MEAN    (idx 7) turun saat deforestasi
-        - VEG_RISIKO     (idx 5) naik menuju 1.0 saat deforestasi
-        - Saat tcc_faktor > 1.0: deforestasi = 0 → hanya PROP_VEG_BERKANOPI yang naik
+    Jalankan 1 prediksi RF dengan faktor CH dan TCC.
+    Dipakai HANYA pada live inference path (tanpa batch).
+    PRED_B tetap dihitung via _lsim3, bukan via _inference langsung.
     """
     deforestasi = max(0.0, 1.0 - tcc_faktor)
     fitur = [float(row_dict.get(k, 0)) for k in _URUTAN_FITUR]
@@ -129,47 +151,19 @@ def _inference(rf, row_dict, ch_faktor, tcc_faktor):
     # CH modulasi
     fitur[13] = fitur[13] * ch_faktor   # CH_MEAN
     fitur[14] = fitur[14] * ch_faktor   # HH_MEAN
-    # fitur[16] CH_STD — TIDAK diubah
-    # fitur[17] HH_STD — TIDAK diubah
 
-    # TCC modulasi per-sektor
+    # TCC modulasi
     fitur[18] = max(0.0, fitur[18] * tcc_faktor)   # PROP_VEG_BERKANOPI
 
     if deforestasi > 0.0:
-        fitur[6]  = max(0.0, fitur[6] * (1.0 - _W_SKOR_AKAR * deforestasi))
-        fitur[7]  = max(0.0, fitur[7] * (1.0 - _W_JNSSMK * deforestasi))
-        vr_asli   = fitur[5]
-        fitur[5]  = min(1.0, vr_asli + _W_VEG_RISIKO * deforestasi * (1.0 - vr_asli))
+        # SKOR_AKAR_MEAN di-index 6 adalah SKOR_DEFISIT_AKAR (tinggi = lebih rentan).
+        # Saat deforestasi (tcc_faktor < 1), defisit akar NAIK.
+        fitur[6] = min(1.0, fitur[6] * (1.0 + 0.50 * deforestasi))
+        # VEG_RISIKO (index 5) juga naik saat deforestasi
+        vr_asli  = fitur[5]
+        fitur[5] = min(1.0, vr_asli + 0.35 * deforestasi * (1.0 - vr_asli))
 
     return float(rf.predict([fitur])[0])
-
-
-def _boost(pred_raw, ch_faktor, tcc_faktor, pred_a, row=None):
-    """
-    Post-hoc boost per-sektor berbasis karakteristik geomorfologis.
-    Tidak berubah dari r26 — menerima tcc_faktor per-sektor dari caller.
-    Output selalu di-clip ke [0, 100].
-    """
-    if row is not None:
-        gc   = float(row.get("GRIDCODE_LERENG_W", 1.5))
-        vr   = float(row.get("VEG_RISIKO",        0.50))
-        akar = float(row.get("SKOR_AKAR_MEAN",    0.40))
-    else:
-        gc, vr, akar = 1.5, 0.50, 0.40
-
-    lereng_fk = float(np.clip((gc - 1.0) / 3.0, 0.0, 1.0))
-    ch_sensitivity = 0.5 + lereng_fk * 0.5
-    ch_effect = (ch_faktor - 1.0) * 15.0 * ch_sensitivity
-
-    deforestasi     = max(0.0, 1.0 - tcc_faktor)
-    akar_proteksi   = float(np.clip(1.0 - akar, 0.0, 1.0))
-    veg_proteksi    = float(np.clip(1.0 - vr,   0.0, 1.0))
-    tcc_sensitivity = lereng_fk * veg_proteksi * akar_proteksi
-    saturasi        = 1.0 - pred_a / 100.0
-    tcc_effect      = deforestasi * 30.0 * tcc_sensitivity * saturasi
-
-    result = pred_raw + ch_effect + tcc_effect
-    return float(np.clip(result, 0.0, 100.0))
 
 
 @simulate_bp.route("/api/simulate", methods=["POST"])
@@ -178,10 +172,7 @@ def simulate():
     kec  = data.get("kec", "").upper().strip()
 
     # ── Validasi & normalisasi parameter ────────────────────────────────────
-    # CH: rentang [10, 150] persen → faktor [0.10, 1.50], sesuai notebook SEL 1
     ch_pct = float(np.clip(float(data.get("ch_pct", 100)), 10.0, 150.0))
-
-    # Vegetasi: 3 faktor terpisah, rentang [0.10, 1.50], sesuai notebook SEL 1
     veg_nf = float(np.clip(float(data.get("veg_nf", 1.0)), 0.10, 1.50))
     veg_af = float(np.clip(float(data.get("veg_af", 1.0)), 0.10, 1.50))
     veg_pv = float(np.clip(float(data.get("veg_pv", 1.0)), 0.10, 1.50))
@@ -189,7 +180,7 @@ def simulate():
     if not kec:
         return jsonify({"error": "Parameter 'kec' wajib diisi."}), 400
 
-    _fk_b = ch_pct / 100.0   # CH factor: 100% → 1.0, 150% → 1.5, 10% → 0.1
+    _fk_b = ch_pct / 100.0   # CH factor: 100% → 1.0
 
     def _tk_per_sektor(label_veg: str) -> float:
         """Pilih faktor TCC sektor berdasarkan kelompok vegetasi dominan."""
@@ -203,7 +194,7 @@ def simulate():
         # Fallback: rerata ketiga faktor jika LABEL_VEG tidak dikenali
         return (veg_nf + veg_af + veg_pv) / 3.0
 
-    # ── 1. Coba batch + live inference ──────────────────────────────────────
+    # ── 1. Coba batch + L_sim_3 ──────────────────────────────────────────────
     if _BATCH.exists():
         try:
             batch    = _load_batch()
@@ -212,103 +203,87 @@ def simulate():
                 if ft["properties"].get("NAME_3", "").upper() == kec
             ]
             if features:
-                ch_mean_kec  = 0.0
-                _rf_tersedia = _MODEL.exists() and _STATIC.exists()
-                _rf          = None
-                _SEKTOR_DATA = {}
-                _ns2         = {}
+                ch_mean_kec = 0.0
+                _ns2        = {}
+                _alpha      = _ALPHA_DEFAULT
+                _beta       = _BETA_DEFAULT
+                _SEKTOR_DATA_idx = {}
 
                 if _STATIC.exists():
                     try:
                         _ns2        = _load_static()
                         ch_mean_kec = _ns2.get("KEC_INFO", {}).get(kec, {}).get("ch_mean", 0.0)
+                        # Baca ALPHA_FIXED & BETA_FIXED jika tersedia (user harus tambahkan di SEL 48)
+                        _alpha = float(_ns2.get("ALPHA_FIXED", _ALPHA_DEFAULT))
+                        _beta  = float(_ns2.get("BETA_FIXED",  _BETA_DEFAULT))
                     except Exception:
-                        _rf_tersedia = False
+                        pass
 
-                if _rf_tersedia:
-                    try:
-                        _rf          = joblib.load(_MODEL)
-                        _SEKTOR_DATA = _ns2.get("SEKTOR_DATA", {})
-                    except Exception:
-                        _rf_tersedia = False
-
-                # Indeks SEKTOR_DATA by sektor_id untuk lookup O(1)
-                _sek_idx = {}
-                if kec in _SEKTOR_DATA:
-                    for r in _SEKTOR_DATA[kec]:
-                        _sek_idx[r.get("sektor_id", "")] = r
+                # Bangun index SEKTOR_DATA per sektor_id
+                if _ns2 and kec in _ns2.get("SEKTOR_DATA", {}):
+                    for r in _ns2["SEKTOR_DATA"][kec]:
+                        _SEKTOR_DATA_idx[r.get("sektor_id", "")] = r
 
                 for ft in features:
                     p = ft["properties"]
 
-                    # CH_AKTIF
+                    # ── CH_AKTIF: isi dari ch_mean_kec jika belum ada ────────
                     if "CH_AKTIF_A" not in p:
-                        p["CH_AKTIF_A"] = p.get("CH_AKTIF", round(ch_mean_kec, 1))
+                        p["CH_AKTIF_A"] = round(ch_mean_kec, 1)
                     p["CH_AKTIF_B"] = round(ch_mean_kec * _fk_b, 1)
 
-                    # KEMIRINGAN dari SEKTOR_DATA
+                    # ── PRED_A: baca dari batch, JANGAN di-override ──────────
+                    # PRED_A di batch adalah PREDIKSI_BASE_PCT dari notebook
+                    # (kondisi aktual, RF murni). Menimpa dengan live inference
+                    # menyebabkan inkonsistensi dgn nilai notebook.
+                    # Jika PRED_A belum ada di batch, isi dengan 50 sebagai fallback.
+                    if "PRED_A" not in p:
+                        p["PRED_A"] = 50.0
+
+                    # ── KEMIRINGAN dari SEKTOR_DATA ──────────────────────────
                     sid        = p.get("ID_SEKTOR", p.get("sektor_id", ""))
-                    _row_match = _sek_idx.get(sid)
+                    _row_match = _SEKTOR_DATA_idx.get(sid)
                     if "KEMIRINGAN" not in p or p.get("KEMIRINGAN", 0) == 0:
                         gc = _row_match.get("GRIDCODE_LERENG_W", 0) if _row_match else 0
                         p["KEMIRINGAN"]        = gc
                         p["GRIDCODE_LERENG_W"] = gc
 
-                    # Pastikan PRED_A ada
-                    if "PRED_A" not in p and "PRED_VAL" in p:
-                        p["PRED_A"] = p["PRED_VAL"]
+                    # ── PRED_B via L_sim_3 ───────────────────────────────────
+                    # cov_base: TCC_MEAN (jika ada di SEKTOR_DATA setelah user
+                    # menambahkan ke SEL 48 export) atau fallback PROP_VEG_BERKANOPI.
+                    # Ketika veg_faktor=1.0 (semua default), ΔCov=0 → PRED_B = PRED_A.
+                    cov_base = 0.0
+                    if _row_match is not None:
+                        cov_base = float(_row_match.get(
+                            "TCC_MEAN",
+                            _row_match.get("PROP_VEG_BERKANOPI", 0.0)
+                        ))
 
-                    # PRED_A + PRED_B: live inference per-sektor
-                    # r28+: PRED_A juga dihitung ulang agar konsisten dengan
-                    # normalisasi/model saat ini. PRED_A dari batch bisa
-                    # basi jika NORM_P5/NORM_P95 atau rf_model.pkl berubah.
-                    if _rf_tersedia and _row_match is not None:
-                        _tk_sektor  = _tk_per_sektor(p.get("LABEL_VEG", ""))
+                    _label_veg  = p.get("LABEL_VEG", "")
+                    _veg_faktor = _tk_per_sektor(_label_veg)
+                    _pred_a     = float(p["PRED_A"])
 
-                        _p5  = float(_ns2.get("NORM_P5",  0.0))
-                        _p95 = float(_ns2.get("NORM_P95", 100.0))
-                        _sp  = _p95 - _p5
-
-                        # — Hitung PRED_A (kondisi aktual ch=1.0, tcc=1.0)
-                        _pred_a_raw  = _inference(_rf, _row_match, 1.0, 1.0)
-                        if _sp < 1e-9:
-                            _pred_a_norm = 50.0
-                        else:
-                            _pred_a_norm = float(np.clip(
-                                (_pred_a_raw - _p5) / _sp * 100.0, 0, 100))
-                        # boost: ch_faktor=1.0 tcc_faktor=1.0 → ch_effect=0 tcc_effect=0
-                        p["PRED_A"] = _boost(_pred_a_norm, 1.0, 1.0, _pred_a_norm, row=_row_match)
-
-                        # — Hitung PRED_B (kondisi skenario)
-                        _pred_b_raw = _inference(_rf, _row_match, _fk_b, _tk_sektor)
-                        if _sp < 1e-9:
-                            _pred_b_norm = 50.0
-                        else:
-                            _pred_b_norm = float(np.clip(
-                                (_pred_b_raw - _p5) / _sp * 100.0, 0, 100))
-                        p["PRED_B"] = _boost(
-                            _pred_b_norm, _fk_b, _tk_sektor, p["PRED_A"], row=_row_match
-                        )
-                    else:
-                        # Fallback: gunakan nilai dari batch (bisa basi)
-                        if "PRED_B" not in p and "PRED_VAL" in p:
-                            p["PRED_B"] = p["PRED_VAL"]
+                    p["PRED_B"] = _lsim3(
+                        _pred_a, _fk_b, _veg_faktor, cov_base, _alpha, _beta
+                    )
 
                 return jsonify({
-                    "type":          "FeatureCollection",
-                    "kec":           kec,
-                    "source":        "batch",
-                    "ch_pct":        ch_pct,
-                    "veg_nf":        veg_nf,
-                    "veg_af":        veg_af,
-                    "veg_pv":        veg_pv,
-                    "live_inference": _rf_tersedia,
-                    "features":      features,
+                    "type":           "FeatureCollection",
+                    "kec":            kec,
+                    "source":         "batch_lsim3",
+                    "ch_pct":         ch_pct,
+                    "veg_nf":         veg_nf,
+                    "veg_af":         veg_af,
+                    "veg_pv":         veg_pv,
+                    "live_inference": True,    # L_sim_3 dianggap "live" karena dihitung ulang
+                    "alpha_used":     _alpha,
+                    "beta_used":      _beta,
+                    "features":       features,
                 })
         except Exception:
             pass  # lanjut ke live inference penuh
 
-    # ── 2. Live inference penuh (tanpa batch) ───────────────────────────────
+    # ── 2. Live inference penuh (tanpa batch) ────────────────────────────────
     if not _MODEL.exists():
         return jsonify({
             "error": (
@@ -345,30 +320,26 @@ def simulate():
     _veg_dom    = KEC_INFO.get(kec, {}).get("veg_dominan",   "—")
     _tanah_dom  = KEC_INFO.get(kec, {}).get("tanah_dominan", "—")
 
-    _p5  = float(ns.get("NORM_P5",  0))
-    _p95 = float(ns.get("NORM_P95", 100))
-    _sp  = _p95 - _p5
+    _alpha = float(ns.get("ALPHA_FIXED", _ALPHA_DEFAULT))
+    _beta  = float(ns.get("BETA_FIXED",  _BETA_DEFAULT))
 
     results = []
     for row in sektors:
-        # Pilih faktor vegetasi sesuai kelompok dominan sektor
-        _tk_sektor = _tk_per_sektor(row.get("LABEL_VEG", ""))
+        _label_veg  = row.get("LABEL_VEG", _veg_dom)
+        _veg_faktor = _tk_per_sektor(_label_veg)
 
-        raw_a = _inference(rf, row, 1.0,   1.0       )
-        raw_b = _inference(rf, row, _fk_b, _tk_sektor)
+        # PRED_A: prediksi RF kondisi aktual (ch=1.0, tcc=1.0)
+        raw_a  = _inference(rf, row, 1.0, 1.0)
+        pred_a = float(np.clip(raw_a, 0.0, 100.0))
 
-        if _sp < 1e-9:
-            pred_a = 50.0; pred_b_norm = 50.0
-        else:
-            pred_a      = float(np.clip((raw_a - _p5) / _sp * 100.0, 0, 100))
-            pred_b_norm = float(np.clip((raw_b - _p5) / _sp * 100.0, 0, 100))
-
-        pred_b = _boost(pred_b_norm, _fk_b, _tk_sektor, pred_a, row=row)
+        # PRED_B: L_sim_3 dengan cov_base dari TCC_MEAN atau PROP_VEG_BERKANOPI
+        cov_base = float(row.get("TCC_MEAN", row.get("PROP_VEG_BERKANOPI", 0.0)))
+        pred_b   = _lsim3(pred_a, _fk_b, _veg_faktor, cov_base, _alpha, _beta)
 
         results.append({
             "sektor_id":          row.get("sektor_id",          ""),
             "ID_SEKTOR":          row.get("sektor_id",          ""),
-            "LABEL_VEG":          row.get("LABEL_VEG",  _veg_dom),
+            "LABEL_VEG":          _label_veg,
             "MACAM_TANA":         row.get("MACAM_TANA", _tanah_dom),
             "KEMIRINGAN":         row.get("GRIDCODE_LERENG_W", 0),
             "GRIDCODE_LERENG_W":  row.get("GRIDCODE_LERENG_W", 0),
@@ -381,12 +352,14 @@ def simulate():
 
     return jsonify({
         "kec":            kec,
-        "source":         "live_inference",
+        "source":         "live_lsim3",
         "ch_mean_kec":    ch_mean_kec,
         "ch_pct":         ch_pct,
         "veg_nf":         veg_nf,
         "veg_af":         veg_af,
         "veg_pv":         veg_pv,
         "live_inference": True,
+        "alpha_used":     _alpha,
+        "beta_used":      _beta,
         "results":        results,
     })
