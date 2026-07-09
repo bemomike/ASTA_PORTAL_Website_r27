@@ -264,11 +264,11 @@ function petaLegenda(divId) {
   const el = document.getElementById(divId);
   if (!el) return;
   const stops = [
-    { v: 0,   label: "Sgt Rendah (<20%)" },
+    { v: 0,   label: "Sangat Rendah (<20%)" },
     { v: 20,  label: "Rendah (20–40%)" },
     { v: 40,  label: "Sedang (40–60%)" },
     { v: 60,  label: "Tinggi (60–80%)" },
-    { v: 80,  label: "Sgt Tinggi (≥80%)" },
+    { v: 80,  label: "Sangat Tinggi (≥80%)" },
   ];
   el.innerHTML = stops.map(s =>
     `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px">
